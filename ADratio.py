@@ -10,10 +10,13 @@ def main():
 	#build dictionary of reference contigs
 	reference_lengths=dict()
 	reference_ambigs=dict()
-	skip=0
+	maxn=0
+	minlen=0
 	read=0
-	print("Reading reference genome",params.ref)
+	kept=0
+	print("\nReading reference genome",params.ref)
 	for contig in read_fasta(params.ref):
+		read+=1
 		if len(contig[1]) >= params.minlen:
 			name=contig[0]
 			if params.delim:
@@ -23,21 +26,25 @@ def main():
 			pos=getSequencePositions(contig[1], "N", case_sensitive=False)
 			
 			#if too many Ns, skip contig
+			#print("Number Ns:",len(pos))
+			#print(float(len(pos))/float(len(contig[1])))
 			if (float(len(pos))/float(len(contig[1]))) > params.maxambig:
-				skip+=1
+				maxn+=1
 			else:
 			#else, load details into reference dicts
 				if params.ambigskip:
 					reference_ambigs[name]=pos
 				reference_lengths[name] = len(contig[1])
-				read+=1
+				kept+=1
 		else:
-			skip+=1
+			minlen+=1
 			continue
-	print("Done!\nTotal contigs read:",str(read))
-	if skip > 0:
-		print("Contigs skipped below min length:",str(skip))
-	
+	print("\n\nTotal contigs read:",str(read))
+	if minlen > 0:
+		print("Contigs skipped below min length:",str(minlen))
+	if maxn > 0:
+		print("Contigs skipped above max N proportion:",str(maxn))
+	print("Kept",str(kept),"contigs.\n")
 
 #Return indexes in string matching requested character
 def getSequencePositions(seq, char, case_sensitive=True):
