@@ -8,13 +8,24 @@ def main():
 	params = parseArgs()
 	
 	#build dictionary of reference contigs
-	reference=dict()
+	reference_lengths=dict()
+	reference_ambigs=dict()
 	skip=0
 	read=0
 	print("Reading reference genome",params.ref)
 	for contig in read_fasta(params.ref):
 		if len(contig[1]) >= params.minlen:
-			reference[contig[0]] = contig[1]
+			name=contig[0]
+			if params.delim:
+				name=(contig[0].split(params.delim))[0]
+			reference[name] = len(contig[1])
+
+			#If -n, gather map of N positions
+			if params.ambigskip:
+				pos=getSequencePositions(contig[1], "N", case_sensitive=False)
+				reference_ambigs[name]=pos
+				print(pos)
+				sys.exit()
 			read+=1
 		else:
 			skip+=1
@@ -23,8 +34,20 @@ def main():
 	if skip > 0:
 		print("Contigs skipped below min length:",str(skip))
 	
-	#read in coverage for sample 1
-	
+
+#Return indexes in string matching requested character
+def getSequencePositions(seq, char, case_sensitive=True):
+	"""
+	Function returns all indices of a given character in a string, 
+	allowing for either case sensitive or case insensitive comparisons
+	Inputs: A string, a character, and (optional) case_sensitive boolean
+	Outputs: List of (integer) indices 
+	"""
+	if not case_sensitive:
+		char=char.lower()
+		return([pos for pos, c in enumerate(seq) if c.lower() == char])
+	else:
+		return([pos for pos, c in enumerate(seq) if c == char])
 
 #Read samples as FASTA. Generator function
 def read_fasta(fas):
@@ -73,7 +96,7 @@ class parseArgs():
 		#Define options
 		try:
 			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:', \
-			["help"])
+			["help", "bg"])
 		except getopt.GetoptError as err:
 			print(err)
 			self.display_help("\nExiting because getopt returned non-zero exit status.")
@@ -87,6 +110,7 @@ class parseArgs():
 		self.ambigskip=False
 		self.delim=None
 		self.minlen=1
+		self.bedgraph=False
 
 		#First pass to see if help menu was called
 		for o, a in options:
@@ -117,12 +141,16 @@ class parseArgs():
 				self.delim=arg
 			elif opt=="m":
 				self.minlen=int(arg)
+			elif opt=="bg":
+				self.bedgraph=True
 			else:
 				assert False, "Unhandled option %r"%opt
 
 		#Check manditory options are set
-		if not self.one2many and not self.many2one:
-			self.display_help("No files provided.")
+		if not self.ref:
+			self.display_help("No reference FASTA provided.")
+		if not self.sam1 or not self.sam2:
+			self.display_help("Must provide 2 sample files (-1, -2)")
 
 
 
@@ -141,12 +169,13 @@ class parseArgs():
 		-1	: Sample 1 pileup file
 		-2	: Sample 2 pileup file
 	Optional arguments:
+		-bg	: Pileup files are in bedGraph format 
 		-z	: Infer zeros for positions missing in -1 and -2
-			  NOTE: By default missing positions will be excluded from calculations
+			  NOTE: By default missing positions will be excluded
 		-n	: Only count non-ambiguous (N) positions in reference
-		-d	: FASTA header delimiter, after which characters are skipped [default=None]
+		-d	: FASTA header delimiter [default=None]
 		-m	: Minimum scaffold length to report [default=None]
-		-o,--out	: Output file prefix [default=out]
+		-o	: Output file prefix [default=out]
 """)
 		print()
 		sys.exit()
