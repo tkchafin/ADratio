@@ -18,15 +18,19 @@ def main():
 			name=contig[0]
 			if params.delim:
 				name=(contig[0].split(params.delim))[0]
-			reference[name] = len(contig[1])
 
 			#If -n, gather map of N positions
-			if params.ambigskip:
-				pos=getSequencePositions(contig[1], "N", case_sensitive=False)
-				reference_ambigs[name]=pos
-				print(pos)
-				sys.exit()
-			read+=1
+			pos=getSequencePositions(contig[1], "N", case_sensitive=False)
+			
+			#if too many Ns, skip contig
+			if (float(len(pos))/float(len(contig[1]))) > params.maxambig:
+				skip+=1
+			else:
+			#else, load details into reference dicts
+				if params.ambigskip:
+					reference_ambigs[name]=pos
+				reference_lengths[name] = len(contig[1])
+				read+=1
 		else:
 			skip+=1
 			continue
@@ -44,6 +48,7 @@ def getSequencePositions(seq, char, case_sensitive=True):
 	Outputs: List of (integer) indices 
 	"""
 	if not case_sensitive:
+		#print(seq)
 		char=char.lower()
 		return([pos for pos, c in enumerate(seq) if c.lower() == char])
 	else:
@@ -95,7 +100,7 @@ class parseArgs():
 	def __init__(self):
 		#Define options
 		try:
-			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:', \
+			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:M:', \
 			["help", "bg"])
 		except getopt.GetoptError as err:
 			print(err)
@@ -111,6 +116,7 @@ class parseArgs():
 		self.delim=None
 		self.minlen=1
 		self.bedgraph=False
+		self.maxambig=0.5
 
 		#First pass to see if help menu was called
 		for o, a in options:
@@ -143,6 +149,8 @@ class parseArgs():
 				self.minlen=int(arg)
 			elif opt=="bg":
 				self.bedgraph=True
+			elif opt=="M":
+				self.maxambig=float(arg)
 			else:
 				assert False, "Unhandled option %r"%opt
 
@@ -175,6 +183,7 @@ class parseArgs():
 		-n	: Only count non-ambiguous (N) positions in reference
 		-d	: FASTA header delimiter [default=None]
 		-m	: Minimum scaffold length to report [default=None]
+		-M	: Maximum proportion of Ns to retain a contig [default=0.5]
 		-o	: Output file prefix [default=out]
 """)
 		print()
