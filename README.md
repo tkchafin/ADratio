@@ -10,32 +10,69 @@ Below I provide a description of options for running ADratio, as well as an exam
 ## Installation 
 
 ADratio is a Python3 program with the following dependencies:
-- pandas 
 - numpy
 - seaborn
 
+Installation instructions coming soon.
+
+## Allele depth ratios
+
+Discussion coming soon
+
 ## Running ADratio 
 
-COming soon
-
-## ADratio inputs 
-
-ADratio requires a very simple input file which can be parsed from a samtools mpileup file, or produced using the bedtools genomecov tool. All that is required is a tab-delimited field (for each of 2 samples) formatted like so:
+All running options for ADratio can be viewed in the command-line menu by calling the program using the -h flag:
 ```
-AB1011.1  1 0
-AB1011.1  2 0
-AB1011.1  3 10
-AB1011.1  4 10
-AB1011.1  5 11
-AB1011.1  6 11
+tyler:ADratio $ ./ADratio.py -h
+
+Exiting because help menu was called.
+
+ADratio.py
+
+Author: Tyler K Chafin, University of Arkansas
+Contact: tkchafin@uark.edu
+Description: Computes allele depth ratios from pileup data
+
+	Mandatory arguments:
+		-r	: Reference FASTA file
+		-1	: Sample 1 coverage file
+		-2	: Sample 2 coverage file
+	Optional Arguments:
+		-c	: Normalizing constant, calculated as:
+			  # Sample 1 reads / # Sample 2 reads [Default=1.0]
+		-n	: Only count non-ambiguous (N) positions in reference
+		-d	: FASTA header delimiter [default=None]
+		-m	: Minimum scaffold length to report [default=None]
+		-M	: Maximum proportion of Ns to retain a contig [default=0.5]
+		-o	: Output file prefix [default=out]
+```
+
+The meaning of these various options, and the format of the required inputs, are discussed below.
+
+### ADratio inputs 
+
+ADratio requires a very simple input file which can be parsed from a [bedGraph](https://genome.ucsc.edu/goldenPath/help/bedgraph.html) file, or produced using the [bedtools](https://bedtools.readthedocs.io/en/latest/) [genomecov](https://bedtools.readthedocs.io/en/latest/content/tools/genomecov.html) tool. All that is required is a tab-delimited field (for each of 2 samples) formatted like so:
+```
+AB1011.1  0	10	1
+AB1011.1  10	14	2
+AB1011.1  14	18	3
 ...
 ...
 ...
 ```
 
-The first field is the scaffold ID (which should match a corresponding header in the multi-fasta for the genome). The second field is the physical base position (starting from the left) on the scaffold, using *1-based indexing* (as is output by bedtools genomecov). The final field is the number of reads which piled up on that exact coordinate (i.e. the per-base read depth). 
+The first field is the scaffold ID (which should match a corresponding header in the multi-fasta for the genome). The second field is the physical base position (starting from the left) on the scaffold, using *0-based indexing* (as is output by bedtools genomecov using the -bg option). The third field is the final position of the interval in *half-open* format (meaning the last position of a chromosome of length N would be N-1). The final field is the number of reads which piled up on that exact coordinate (i.e. the per-base read depth). 
+
+So, reading this format, the coverage per-base for scaffold "AB1011.1" shown in the above bedGraph is:
+```
+11111111122223333....
+```
 
 Below I provide an example pipeline using standard bioinformatics tools for generating these inputs, starting from raw reads formatted as fastq. 
+
+### Optional arguments
+
+
 
 ## An example pipeline 
 
