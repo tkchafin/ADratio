@@ -5,7 +5,7 @@ import os
 import getopt
 import numpy as np
 import pandas as pd
-import naiveBayes as nb
+import nbClassifier as nb
 import plotAD as plot
 
 def main():
