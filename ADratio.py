@@ -6,6 +6,7 @@ import getopt
 import numpy as np
 import pandas as pd
 import naiveBayes as nb
+import plotAD as plot
 
 def main():
 	params = parseArgs()
@@ -64,7 +65,9 @@ def main():
 	else:
 		bad=None
 	cov1 = parseBedGraph(params.sam1, reference_lengths, bad)
-	print(cov1)
+	oo=params.out+"_ind1"
+	writeCov(oo, cov1)
+	#print(cov1)
 	
 	#parse individual 2 coverage
 	print("\nParsing bedgraph for individual 2:",params.sam2)
@@ -73,13 +76,16 @@ def main():
 	else:
 		bad=None
 	cov2 = parseBedGraph(params.sam2, reference_lengths, bad)
-	print(cov2)
+	op=params.out+"_ind2"
+	writeCov(op, cov2)
+	#print(cov2)
 	
 	#Calculate normalized ADratio per-scaffold
 	print("\nComputing ADratio for each scaffold...")
 	print("...Using the normalizing constant:",str(params.constant))
 	adratios = computeADratios(cov1, cov2, params.constant)
 	#print(adratios)
+	dat=ADtoDF(adratios)
 	writeAD(adratios, params.out)
 	
 	#if classification requested
@@ -92,7 +98,7 @@ def main():
 		if not params.fitdata:
 			classifier.initFromTable(priors)
 		else:
-			print("Fitting classifier using provided dataset:",params.fitdata)
+			print("\nFitting classifier using provided dataset:",params.fitdata)
 			fdf=pd.read_table(params.fitdata, sep="\t", header=0)
 			classifier.fit(fdf)
 			if params.equalprobs:
@@ -101,18 +107,49 @@ def main():
 		classifier.printPriors()
 		
 		#dat=pd.read_table("example/nb_testdata.txt", sep="\t", header=0)
-		dat=ADtoDF(adratios)
+		#dat=pd.read_table("example/nb_testfit.txt", sep="\t")
 		dat_class=classifier.classify(dat)
 		dat_class=classifier.getMAP(dat_class, params.map_thresh)
 		if params.jaynes:
 			dat_class=classifier.getJaynes(dat_class, params.j_thresh)
-		prettyPrint(dat_class)
+		#prettyPrint(dat_class)
 		
-		sys.exit()
+		#output classification table
+		oname=params.out+"_classify.txt"
+		print("\nOutputting classified results to:",oname)
+		dat_class.to_csv(oname, sep="\t", header=True, quoting=None, index=False)
+		
+	#Make plots
+	if not params.noPlots:
+		#histogram of AD values
+		if params.classify:
+			o=params.out + "_MAP"
+			plot.plotADclassified(dat_class, o, "MAP", params.binwidth)
+			if params.jaynes:
+				o2=params.out + "_JAYNE"
+				plot.plotADclassified(dat_class, o2, "JAYNE", params.binwidth)
+		else:
+			#dat=pd.read_table("example/nb_testfit.txt", sep="\t")
+			plot.plotAD(dat, params.out, params.binwidth)
+			
+		
+	print("\nDone!\n")
+	sys.exit()
+
+def writeCov(out, cov):
+	oname=out+"_cov.txt"
+	new=dict()
+	new["Scaffold"] = list(cov.keys())
+	new["MeanDepth"] = list(cov.values())
+	print("Outputting mean coverages to:",oname)
+	df=pd.DataFrame.from_dict(new, orient="columns")
+	df.to_csv(oname, sep="\t", header=True, quoting=None, index=False)
+
 
 def writeAD(ad, out):
 	oname=out + "_AD.txt"
 	df=ADtoDF(ad)
+	print("Outputting AD results to:",oname)
 	df.to_csv(oname, sep="\t", header=True, quoting=None, index=False)
 
 def ADtoDF(ad):
@@ -278,7 +315,7 @@ class parseArgs():
 	def __init__(self):
 		#Define options
 		try:
-			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:M:c:bNp:P:xJj:F:f', \
+			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:M:c:b:Np:P:xJj:F:f', \
 			["help"])
 		except getopt.GetoptError as err:
 			print(err)
@@ -293,7 +330,7 @@ class parseArgs():
 		self.ambigskip=False
 		self.delim=None
 		self.minlen=1
-		self.bedgraph=True #NOTE: Might add support for other formats later
+		self.binwidth=0.1
 		self.maxambig=0.5
 		self.constant=1.0
 		self.classify=False
@@ -335,7 +372,7 @@ class parseArgs():
 			elif opt=="m":
 				self.minlen=int(arg)
 			elif opt=="b":
-				self.bedgraph=True
+				self.binwidth=float(arg)
 			elif opt=="c":
 				self.constant=float(arg)
 			elif opt=="M":
@@ -385,6 +422,8 @@ class parseArgs():
 	Optional arguments:
 		-d	: FASTA header delimiter [default=None]
 		-o	: Output file prefix [default=out]
+		-x	: Toggle to turn OFF plotting
+		-b	: Binwidth for plotting [default=0.1]
 		
 	ADratio arguments:
 		-c	: Normalizing constant, calculated as:
@@ -416,9 +455,7 @@ class parseArgs():
 		-P	: Maximum a posteriori (MAP) threshold to keep a classification 
 		-J	: Toggle on to calculate Jayne's 'evidence' for each class
 		-j	: Jayne's evidence (db) threshold [default=30]
-		
-	Plotting arguments:
-		-x	: Toggle to turn OFF plotting
+
 """)
 		print()
 		sys.exit()

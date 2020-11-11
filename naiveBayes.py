@@ -120,7 +120,7 @@ class nbClassifier():
 		for index, row in table.iterrows():
 			#print(row)
 			self.addClass(str(row[0]), float(row[-1]))
-			self.classProbs.append(float(row[-1]))
+			#self.classProbs.append(float(row[-1]))
 			offset=0
 			#print(row)
 			for v in variables:
@@ -142,7 +142,7 @@ class nbClassifier():
 				d[m].append(self.classes[c].priors[v].getMean())
 				d[s].append(self.classes[c].priors[v].getSD())
 		d['classProb'] = self.classProbs
-		print(d)
+		#print(d)
 		df = pd.DataFrame(data=d)
 		with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
 			print(df)
@@ -282,15 +282,4 @@ class nbClassifier():
 			self.classes[c].setClassProb(float(l[idx]))
 			self.classProbs[idx]=1.0
 			idx+=1
-			
-
-
-# Calculate the mean of a list of numbers
-def mean(l):
-	return sum(l)/float(len(l))
-
-# Calculate the standard deviation of a list of numbers
-def stdev(l):
-	avg = mean(l)
-	var = sum([(x-avg)**2 for x in l]) / float(len(l)-1)
-	return sqrt(var)		
+					
