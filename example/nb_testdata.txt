@@ -1,0 +1,12 @@
+Name	AD
+contig1	2.00
+contig2	1.07
+contig3	0.006
+contig1123	0.01
+contig1124	0.23
+contig1125	1.43
+contig1126	2.11
+contig1127	2.65
+contig1128	0.999
+contig1129	0.8004
+contig1130	0.6

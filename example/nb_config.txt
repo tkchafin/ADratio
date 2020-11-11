@@ -1,0 +1,4 @@
+Class	AD_mean	AD_sd	Prob
+X	2.0	0.1	1.0
+Y	0.0	0.1	1.0
+auto	1.0	0.1	1.0

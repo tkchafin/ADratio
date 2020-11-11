@@ -51,11 +51,12 @@ The meaning of these various options, and the format of the required inputs, are
 
 ### ADratio inputs 
 
-ADratio requires a very simple input file which can be parsed from a [bedGraph](https://genome.ucsc.edu/goldenPath/help/bedgraph.html) file, or produced using the [bedtools](https://bedtools.readthedocs.io/en/latest/) [genomecov](https://bedtools.readthedocs.io/en/latest/content/tools/genomecov.html) tool. All that is required is a tab-delimited field (for each of 2 samples) formatted like so:
+ADratio requires a very simple input file which can be parsed from a [bedGraph](https://genome.ucsc.edu/goldenPath/help/bedgraph.html) file, or produced using the [bedtools](https://bedtools.readthedocs.io/en/latest/) [genomecov](https://bedtools.readthedocs.io/en/latest/content/tools/genomecov.html) tool. Note that bedGraph uses a *zero-relative, half-open coordinate system*. More on what that means below. The bedGraph (for each of 2 samples) should be a tab-delimited text file with four fields:
 ```
 AB1011.1  0	10	1
-AB1011.1  10	14	2
-AB1011.1  14	18	3
+AB1011.1  10	15	3
+AB1011.1  15	16	4
+AB1011.1	17	20	5
 ...
 ...
 ...
@@ -65,7 +66,7 @@ The first field is the scaffold ID (which should match a corresponding header in
 
 So, reading this format, the coverage per-base for scaffold "AB1011.1" shown in the above bedGraph is:
 ```
-11111111122223333....
+111111111133333440555....
 ```
 
 Below I provide an example pipeline using standard bioinformatics tools for generating these inputs, starting from raw reads formatted as fastq. 
