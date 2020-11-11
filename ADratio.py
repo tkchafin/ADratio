@@ -79,7 +79,8 @@ def main():
 	print("\nComputing ADratio for each scaffold...")
 	print("...Using the normalizing constant:",str(params.constant))
 	adratios = computeADratios(cov1, cov2, params.constant)
-	print(adratios)
+	#print(adratios)
+	writeAD(adratios, params.out)
 	
 	#if classification requested
 	if params.classify:
@@ -88,18 +89,43 @@ def main():
 			priors = pd.read_table(params.config, sep="\t", header=0)
 		else:
 			priors = getDefaultPriors()
-		classifier.initFromTable(priors)
+		if not params.fitdata:
+			classifier.initFromTable(priors)
+		else:
+			print("Fitting classifier using provided dataset:",params.fitdata)
+			fdf=pd.read_table(params.fitdata, sep="\t", header=0)
+			classifier.fit(fdf)
+			if params.equalprobs:
+				classifier.setProbsEqual()
 		print("\nClassifying scaffolds using the following priors:")
 		classifier.printPriors()
 		
-		dat=pd.read_table("example/nb_testdata.txt", sep="\t", header=0)
-		dat=classifier.classify(dat)
-		dat=classifier.getMAP(dat, params.map_thresh)
+		#dat=pd.read_table("example/nb_testdata.txt", sep="\t", header=0)
+		dat=ADtoDF(adratios)
+		dat_class=classifier.classify(dat)
+		dat_class=classifier.getMAP(dat_class, params.map_thresh)
 		if params.jaynes:
-			dat=classifier.getJaynes(dat, params.j_thresh)
-		with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-			print(dat)
+			dat_class=classifier.getJaynes(dat_class, params.j_thresh)
+		prettyPrint(dat_class)
+		
 		sys.exit()
+
+def writeAD(ad, out):
+	oname=out + "_AD.txt"
+	df=ADtoDF(ad)
+	df.to_csv(oname, sep="\t", header=True, quoting=None, index=False)
+
+def ADtoDF(ad):
+	new=dict()
+	new["Name"]=list(ad.keys())
+	new["AD"]=list(ad.values())
+	df=pd.DataFrame.from_dict(new, orient="columns")
+	#prettyPrint(df)
+	return(df)
+
+def prettyPrint(df):
+	with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+		print(df.sort_values(df.columns[0], ascending=True))
 
 def getDefaultPriors():
 	d = {'Class': ["X", "Y", "auto"], 
@@ -252,7 +278,7 @@ class parseArgs():
 	def __init__(self):
 		#Define options
 		try:
-			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:M:c:bNp:P:xJj:', \
+			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:M:c:bNp:P:xJj:F:f', \
 			["help"])
 		except getopt.GetoptError as err:
 			print(err)
@@ -276,6 +302,8 @@ class parseArgs():
 		self.noPlots=False
 		self.jaynes=False
 		self.j_thresh=30
+		self.fitdata=None
+		self.equalprobs=False
 
 		#First pass to see if help menu was called
 		for o, a in options:
@@ -324,6 +352,10 @@ class parseArgs():
 				self.jaynes=True
 			elif opt=="j":
 				self.j_thresh=float(arg)
+			elif opt=="F":
+				self.fitdata=arg
+			elif opt=="f":
+				self.equalprobs=True
 			else:
 				assert False, "Unhandled option %r"%opt
 
@@ -362,7 +394,7 @@ class parseArgs():
 		-M	: Maximum proportion of Ns to retain a contig [default=0.5]
 		
 	Classifier arguments:
-		-N	: Classify scaffolds to chromosome type (e.g. X, Y, autosome)
+		-N	: Toggle to classify scaffolds to chromosome type (e.g. X, Y, autosome)
 		-p	: (Optional) Params file to customize chr type priors
 			   See documentation. By default, we assume three Gaussian 
 			   priors representing how we expect ADratio to vary by chr type:
@@ -371,7 +403,17 @@ class parseArgs():
 			   Y	0.0	0.1	1.0
 			   auto	1.0	0.1	1.0
 			   NOTE: Here we assume <-1> female and <-2> male.
-		-P	: Maximum a posteriori threshold to keep a classification 
+		-F	: (Optional) Fit classifier to a tab-delimited data file
+			   See documentation. Format should be like so: 
+			   Class AD
+			   X	2.09
+			   X	1.99
+			   Y	0.001
+			   auto	1.1
+			   auto	0.977
+			   ...
+		-f	: Toggle on to set class probabilities equal when using -F
+		-P	: Maximum a posteriori (MAP) threshold to keep a classification 
 		-J	: Toggle on to calculate Jayne's 'evidence' for each class
 		-j	: Jayne's evidence (db) threshold [default=30]
 		
