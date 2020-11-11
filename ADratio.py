@@ -54,6 +54,8 @@ def main():
 		if maxn > 0:
 			print("Contigs skipped above max N proportion:",str(maxn))
 		print("Kept",str(kept),"contigs.\n")
+		if kept <1:
+			print("\nNothing to do.\n")
 	else:
 		print("ERROR: No reference FASTA provided.")
 		sys.exit()
@@ -249,7 +251,11 @@ def getMeanDepth(depths, exclude_chars=None):
 	"""
 	#print(depths)
 	if exclude_chars:
-		depths[tuple(exclude_chars)] = np.nan
+		print(exclude_chars[0])
+		j=sorted(exclude_chars[0], reverse=True)
+		j2=[i for i in j if i < len(depths)]
+		depths[j2] = np.nan
+	#print(depths)
 	#print(depths)
 	mean_depth = np.nanmean(depths)
 	return(mean_depth)
