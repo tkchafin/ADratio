@@ -1,7 +1,7 @@
 # ADratio
-Python program for calculating normalized average depth ratio ("AD ratio") per-scaffold, given depth information for a pair of samples. The utility of this method is identifying candidate scaffolds or contigs belonging to sex chromosomes or autosomes, when chromosome-level assemblies for closely related organisms are not available to map your non-model genome to. 
+Python program for calculating normalized average depth ratio ("AD ratio") per-scaffold, given depth information for a pair of samples, and classifying scaffolds based on ADratio values. The utility of this method is identifying candidate scaffolds or contigs being sex-linked, when chromosome-level assemblies for closely related organisms are not available to map your non-model genome to. 
 
-The idea for this approach was taken from [Bidon et al. 2015](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4524476/) (citation below), which is the first place I've seen it. If you are aware of an earlier reference for this method, please let me know, but for now if you use it, please cite the original authors:
+The idea for this approach comes from [Bidon et al. 2015](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4524476/), which is the first place I've seen it. If you are aware of an earlier reference for this method, please let me know, but for now if you use it, please cite:
 
 Bidon T, Schreck N, Hailer F, Nilsson MA, & Janke A. 2015. Genome-wide search identifies 1.9 Mb from the Polar Bear Y chromosome for evolutionary analysis. Genome Biology and Evolution. 7(7): 2010-2022.
 
@@ -12,14 +12,27 @@ Below I provide a description of options for running ADratio, as well as an exam
 ADratio is a Python3 program with the following dependencies:
 - numpy
 - seaborn
+- pandas
 
-Installation instructions coming soon.
+These can be installed via [anaconda](https://www.anaconda.com/products/individual), or [pip](https://pip.pypa.io/en/stable/):
+```
+#conda installation
+conda install -c anaconda -c conda-forge numpy seaborn pandas
+
+#or, pip3 installation
+pip3 install numpy pandas seaborn
+```
 
 ## Allele depth ratios
+The 'allele depth ratio' can be used to identify sex-linked chromosomes in [heterogametic](https://en.wikipedia.org/wiki/Heterogametic_sex) species. For example, in a species in which males have XY and females XX, the results of whole-genome shotgun sequencing should produce roughly twice as many X chromosome reads for the female than the male (2:1 ratio), and essentially no coverage of the Y chromosome in females (0:1). Autosomes, however, are expected to be ~1:1 between the two sexes. This expectation allows us to potentially classify scaffolds or contigs as being sex-linked without having access to a chromosome-level assembly. To do so, we simply calculate for *each scaffold* the ratio female mean depth / male mean depth, multiplied by a normalizing constant (=total female reads/total male reads). The normalizing constant is required because biased sequencing effort towards one of the two samples will skew the mean depths. In an XY system, the X chromosome is expected to have an ADratio ~= 2.0; the Y chromosome ~= 0.0; and an autosome ~= 2.0. 
 
-Discussion coming soon
+## Classification in ADratio
 
-## Running ADratio 
+In addition to computing allele-depth ratios, ADratio also uses a companion library (nbClassifier) to build a [Naive Bayes classifier](https://en.wikipedia.org/wiki/Naive_Bayes_classifier) to use a probabilistic model to assign class labels (e.g. X, Y, auto) to input scaffolds. The classifier in ADratio assumes Gaussian priors to compute posterior probabilities of assignment to each of any arbitrary number of input classes. By default, ADratio has priors for X, Y, and autosomal with means or 1.0, 0.0, and 2.0, respectively, all with standard deviations of 0.1. However, these are all customizable by the user to fit any potential scheme (e.g. Z/W systems), and any Gaussian parameters. Options are also included for the user to easily fit the classifier to an input dataset (which could represent simulated or empirical values). More on that below. 
+
+After computing posterior probabilities, ADratio then computes a relative evidence measurement, [Jayne's (2002) evidence](https://books.google.com/books?hl=en&lr=&id=UjsgAwAAQBAJ&oi=fnd&pg=PR17&ots=OVLtaP_kaC&sig=aVU96BIUz5jq6crltDQrBvBdlRE#v=onepage&q&f=false), of membership to each class as P(class) / P(not_class); where P(not_class) is the product of probabilities to all other classes. For example, with 3 classes (A, B, C), this would be equal to P(A) / P(B) * P(C), and so on. For interpretability, the result is transformed as 10 times the base-10 logarithm. This classification scheme was inspired by [Tyrell 2019](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6526653/).
+
+# Running ADratio 
 
 All running options for ADratio can be viewed in the command-line menu by calling the program using the -h flag:
 ```
@@ -37,19 +50,48 @@ Description: Computes allele depth ratios from pileup data
 		-r	: Reference FASTA file
 		-1	: Sample 1 coverage file
 		-2	: Sample 2 coverage file
-	Optional Arguments:
+		
+	Optional arguments:
+		-d	: FASTA header delimiter [default=None]
+		-o	: Output file prefix [default=out]
+		-x	: Toggle to turn OFF plotting
+		-b	: Binwidth for plotting [default=0.1]
+		
+	ADratio arguments:
 		-c	: Normalizing constant, calculated as:
 			  # Sample 1 reads / # Sample 2 reads [Default=1.0]
 		-n	: Only count non-ambiguous (N) positions in reference
-		-d	: FASTA header delimiter [default=None]
 		-m	: Minimum scaffold length to report [default=None]
 		-M	: Maximum proportion of Ns to retain a contig [default=0.5]
-		-o	: Output file prefix [default=out]
+		
+	Classifier arguments:
+		-N	: Toggle to classify scaffolds to chromosome type (e.g. X, Y, autosome)
+		-p	: (Optional) Params file to customize chr type priors
+			   See documentation. By default, we assume three Gaussian 
+			   priors representing how we expect ADratio to vary by chr type:
+			   Class	AD_mean	AD_sd	Prob
+			   X	2.0	0.1	1.0
+			   Y	0.0	0.1	1.0
+			   auto	1.0	0.1	1.0
+			   NOTE: Here we assume <-1> female and <-2> male.
+		-F	: (Optional) Fit classifier to a tab-delimited data file
+			   See documentation. Format should be like so: 
+			   Class AD
+			   X	2.09
+			   X	1.99
+			   Y	0.001
+			   auto	1.1
+			   auto	0.977
+			   ...
+		-f	: Toggle on to set class probabilities equal when using -F
+		-P	: Maximum a posteriori (MAP) threshold to keep a classification 
+		-J	: Toggle on to calculate Jayne's 'evidence' for each class
+		-j	: Jayne's evidence (db) threshold [default=30]
 ```
 
 The meaning of these various options, and the format of the required inputs, are discussed below.
 
-### ADratio inputs 
+### Input file
 
 ADratio requires a very simple input file which can be parsed from a [bedGraph](https://genome.ucsc.edu/goldenPath/help/bedgraph.html) file, or produced using the [bedtools](https://bedtools.readthedocs.io/en/latest/) [genomecov](https://bedtools.readthedocs.io/en/latest/content/tools/genomecov.html) tool. Note that bedGraph uses a *zero-relative, half-open coordinate system*. More on what that means below. The bedGraph (for each of 2 samples) should be a tab-delimited text file with four fields:
 ```
@@ -71,11 +113,14 @@ So, reading this format, the coverage per-base for scaffold "AB1011.1" shown in 
 
 Below I provide an example pipeline using standard bioinformatics tools for generating these inputs, starting from raw reads formatted as fastq. 
 
-### Optional arguments
+### ADratio running options
+
+ADratio includes a few basic filtering options. Using the <-n> flag, all N (ambiguous) positions in the reference scaffold sequences will be un-counted; meaning that they are both removed from the input bedGraphs, AND subtracted from the total scaffold length. This is to prevent bias caused by mapping to ambiguous positions. The user can also remove scaffolds below a certain length threshold <-m>, and specify a maximum allowable N proportion to retain a scaffold <-N>. 
+
+For computation of the allele-depth ratio, the user can also specify a normalizing constant using <-c>. This is left to the user because the user may have certain criteria for which reads were used for mapping (e.g. removing duplicates), and can more easily calculate read counts using other tools such as samtools. 
 
 
-
-## An example pipeline 
+# Example pipeline 
 
 There are various ways to go about producing the above input, but the general process is to: 1) Map reads for each sample to the given genome (after any number of optional quality filtering steps); 2) Count up how many reads pile up on each read position. In our example here, we will accomplish the first using [bwa mem](http://bio-bwa.sourceforge.net/), a popular short-read aligner, but you could use any number of others (such as [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml) or [bbmap](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmap-guide/)). 
 
@@ -127,8 +172,19 @@ Finally, I produced the exact output needed for ADratio.py using the [genomecov]
 /share/apps/bioinformatics/bedtools2/2.25.0/bin/bedtools genomecov -d -ibam male_removeDups.bam > male_coverage.txt
 ```
 
+The normalizing constant was then calculated using samtools applied to each of the filtered bam files:
+```
+samtools view -c -F 260 XXX_removeDups.bam
+```
+In this case, the normalizing constant was 0.997, so very close to the default used by ADratio. 
+
 That's it! After completing these steps you can run ADratio. Note that the runtimes can be *considerable* depending on the amount of sequence data, your genome size, and the specifics of your machine (e.g. # available cores), so running on an HPC is recommended. For reference, here are rough runtimes for the example above: Trimmomatic: ~3 hours per individual; BWA+samtools: ~12 hours (with 32 cores; CPU time ~70 hours); Picard MarkDuplicates: ~4 hours (CPU time 9 hours); bedtools genomecov: 12 hours. Benchmarking ADratio for these files is also presented below. 
 
-## ADratio runtimes and benchmarking
+You can then run ADratio, using the default classification priors, excluding N positions, and excluding scaffolds having >10% N content or being shorter than 1000bp, like so:
+```
+./ADratio.py -r .GCA_003344425.1_ASM334442v1_genomic.fna -1 female_coverage.txt -2 male_coverage.txt -m 1000 -M 0.1 -N -n -J -o "bba" -d " " -c 0.997
+```
 
-Coming soon
+## ADratio testing and runtime
+
+ADratio using the above large dataset (>300 million reads per sample and XXX scaffolds), including all classification steps, had a peak usage of XXX GB of memory, and a total runtime of YYY. 
