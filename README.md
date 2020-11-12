@@ -89,7 +89,14 @@ Description: Computes allele depth ratios from pileup data
 		-j	: Jayne's evidence (db) threshold [default=30]
 ```
 
-The meaning of these various options, and the format of the required inputs, are discussed below.
+The meaning of these various options, and the format of the required inputs, are discussed below. Also note that this assumes your Python3 interpreter is installed at /usr/bin/python... If this isn't the case, you can specify python like so:
+```
+#if python3 in your path:
+python3 ADratio.py -h
+
+#if python3 not in your path (for example here, at ~/miniconda3/bin
+~/miniconda3/bin/python3 ADratio.py -h
+```
 
 ### Input file
 
