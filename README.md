@@ -1,5 +1,5 @@
 # ADratio
-Python program for calculating normalized average depth ratio ("AD ratio") per-scaffold, given depth information for a pair of samples, and classifying scaffolds based on ADratio values. The utility of this method is identifying candidate scaffolds or contigs being sex-linked, when chromosome-level assemblies for closely related organisms are not available to map your non-model genome to. 
+Python program for calculating normalized average depth ratio ("AD ratio") per-scaffold, given depth information for a pair of samples, and probabilistically classifying scaffolds based on ADratio values. The utility of this method is identifying candidate scaffolds or contigs being sex-linked, when chromosome-level assemblies for closely related organisms are not available to map your non-model genome to. 
 
 The idea for this approach comes from [Bidon et al. 2015](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4524476/), which is the first place I've seen it. If you are aware of an earlier reference for this method, please let me know, but for now if you use it, please cite:
 
