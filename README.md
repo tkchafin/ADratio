@@ -201,7 +201,7 @@ You can also just run the classification model on already calculated AD ratios, 
 ### Important considerations when running ADratio
 *Heterochromosome scaffolds can only be assigned if they are logically present in the reference*. By this, I mean that, for example, in order to use ADratio to suggest that a scaffold is Y-linked, the individual from which the reference was sequenced should have actually had a Y-chromosome...
 
-*Individual 1 should almost always be the female*. For most use cases, the XX individual should be <-1> and the XY individual <-2>. This is because, under the expected 0:1 ratio for Y DNA between the XX and XY individual, if they were reversed it would create a divide-by-zero error. In those cases, ADratio will *SKIP* the scaffold. So, there are actually two important notes here: 1) To identify a Y chromosome, <-1> must be XX and <-2> XY; and 2) Any scaffolds exclusively present in the <-2> individual 
+*Individual 1 should almost always be the female*. For most use cases, the XX individual should be <-1> and the XY individual <-2>. This is because, under the expected 0:1 ratio for Y DNA between the XX and XY individual, if they were reversed it would create a divide-by-zero error. In those cases, ADratio will *SKIP* the scaffold. So, there are actually two important notes here: 1) To identify a Y chromosome, <-1> must be XX and <-2> XY; and 2) Any scaffolds exclusively present in the <-1> individual will be excluded.
 
 ## Examples 
 
