@@ -203,8 +203,9 @@ You can also just run the classification model on already calculated AD ratios, 
 
 *Individual 1 should almost always be the female*. For most use cases, the XX individual should be <-1> and the XY individual <-2>. This is because, under the expected 0:1 ratio for Y DNA between the XX and XY individual, if they were reversed it would create a divide-by-zero error. In those cases, ADratio will *SKIP* the scaffold. So, there are actually two important notes here: 1) To identify a Y chromosome, <-1> must be XX and <-2> XY; and 2) Any scaffolds exclusively present in the <-2> individual 
 
-# Example pipeline 
+## Examples 
 
+### Tutorial using large American black bear dataset
 There are various ways to go about producing the above input, but the general process is to: 1) Map reads for each sample to the given genome (after any number of optional quality filtering steps); 2) Count up how many reads pile up on each read position. In our example here, we will accomplish the first using [bwa mem](http://bio-bwa.sourceforge.net/), a popular short-read aligner, but you could use any number of others (such as [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml) or [bbmap](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmap-guide/)). 
 
 In my case, I downloaded two sets of raw sequence files from the NCBI SRA: 
@@ -268,6 +269,79 @@ You can then run ADratio, using the default classification priors, excluding N p
 ./ADratio.py -r .GCA_003344425.1_ASM334442v1_genomic.fna -1 female_coverage.txt -2 male_coverage.txt -m 1000 -M 0.1 -N -n -J -o "bba" -d " " -c 0.997
 ```
 
-## ADratio testing and runtime
+### Test cases using example files
 
-ADratio using the above large dataset (>300 million reads per sample and XXX scaffolds), including all classification steps, had a peak usage of XXX GB of memory, and a total runtime of YYY. 
+ADratio using the above large dataset (>300 million reads per sample and XXX scaffolds), ADratio took 1 hour and 13 minutes to parse both bedGraph files (~75000 scaffolds each after removing short and high N-content scaffolds) and calculate mean depth of coverage for all scaffolds. This step is a bit faster when not skipping N bases (<-n>), but I still recommend using that option as mapping depths can be misleading in scaffolds regions with high ambiguity. Calculating allele-depth ratios and performing classification using default priors took an additional XXX
+
+#### Full run; classification with default priors
+
+Because datasets from organisms with large genome sizes take such considerable time to parse, I've included some test files to help verify the functionality of ADratio. To do a basic test of all steps, with default classification, you can run:
+```
+./ADratio.py -r example/ref.fa -1 example/sample1.bedgraph -2 example/sample2.bedgraph -m 10 -M 0.5 -n -N -J
+```
+
+This will run ADratio using a very small dataset of 5 scaffolds:
+```
+$ cat example/ref.fa
+>contig1
+AAAAAAAAAAAAAAAAANAAAANNNAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+>contig2
+NANAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+>contig3
+AAAAAAAAAAAAAAAAANAAAATTTAAAAAAAAAAAAAAAAAAAAAAAAAAA
+>contig4
+AGAAANNNNNNNNNNAA
+>contig5
+AAAAA
+```
+
+The <-m 10> filter removes scaffolds below 10 bases (contig 5) and <-M 0.5> removes scaffolds with >=50% N content (contig 4). You can verify these are removed in the first lines of the ADratio output: 
+```
+tyler:ADratio $ python3 ./ADratio.py -r example/ref.fa -1 example/sample1.bedgraph -2ple/sample2.bedgraph -m 10 -M 0.5 -n -N -J
+
+Reading reference genome example/ref.fa
+
+Total contigs read: 5
+Contigs skipped below min length: 1
+Contigs skipped above max N proportion: 1
+Kept 3 contigs.
+```
+
+The <-n> option excludes N bases from retained scaffolds in the depth calculations. The next lines of ADratio output tell you the output files from parsing the bedGraphs and calculating mean coverage and AD ratios for each scaffold:
+```
+Parsing bedgraph for individual 1: example/sample1.bedgraph
+Outputting mean coverages to: out_ind1_cov.txt
+
+Parsing bedgraph for individual 2: example/sample2.bedgraph
+Outputting mean coverages to: out_ind2_cov.txt
+
+Computing ADratio for each scaffold...
+...Using the normalizing constant: 1.0
+Outputting AD results to: out_AD.txt
+```
+
+Finally, the <-N> option engages the classification model (with default priors), and the <-J> calculates Jaynes evidence:
+```
+Classifying scaffolds using the following priors:
+  Class  AD_mean  AD_sd  classProb
+0     X      2.0    0.1        1.0
+1     Y      0.0    0.1        1.0
+2  auto      1.0    0.1        1.0
+
+Outputting classified results to: out_classify.txt
+
+Done!
+```
+In the full output out_classify.txt, you can see the results for all of our example scaffolds:
+
+| Scaffold | AD                    | X                      | Y                     | auto                   | MAP_value          | MAP  | X_J                | Y_J                | auto_J             | JAYNE_value        | JAYNE |
+|----------|-----------------------|------------------------|-----------------------|------------------------|--------------------|------|--------------------|--------------------|--------------------|--------------------|-------|
+| contig2  | 1.0756972111553786    | 1.1200753506219021e-18 | 2.980375741341931e-25 | 2.9955958827339573     | 2.9955958827339573 | auto | 60.98492995045966  | -70.51459445052521 | 429.52964965321894 | 429.52964965321894 | auto  |
+| contig1  | 2.0                   | 3.989422804014327      | 5.520948362159921e-87 | 7.694598626706474e-22  | 3.989422804014327  | X    | 1079.72710409992   | -657.4508235130871 | 645.4326221966683  | 1079.72710409992   | X     |
+| contig3  | 0.0062499999999999995 | 1.923240324000599e-86  | 3.9816385668688663    | 1.4347353220919023e-21 | 3.9816385668688663 | Y    | -654.7280006870919 | 1071.5925648783336 | 642.7267639988725  | 1071.5925648783336 | Y     |
+
+#### Classification using custom priors
+
+You can also specify your own priors. An example prior config file is provided in example/
+
+#### Classification using empirical allele-depth ratios
