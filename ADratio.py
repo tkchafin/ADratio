@@ -184,7 +184,7 @@ def computeADratios(cov1, cov2, constant=1.0):
 		if contig in cov2.keys():
 			d2=float(cov2[contig])
 		else:
-			d2=0.0
+			d2=0.0000000000000000001 #prevents divide-by-zero
 		ad[contig] = (d1/d2) * constant
 	return(ad)
 
