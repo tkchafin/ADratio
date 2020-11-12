@@ -342,6 +342,33 @@ In the full output out_classify.txt, you can see the results for all of our exam
 
 #### Classification using custom priors
 
-You can also specify your own priors. An example prior config file is provided in example/
+You can also specify your own priors. An example prior config file is provided in example/nb_config.txt:
+```
+Class   AD_mean AD_sd   Prob
+X       2.0     0.2     0.15
+Y       0.0     0.1     0.05
+auto    1.0     0.2     0.8
+```
+
+You can run the test case again, but this time with these custom priors, like so:
+```
+python3 ./ADratio.py -r example/ref.fa -1 example/sample1.bedgraph -2 example/sample2.bedgraph -m 10 -M 0.5 -n -N -J -p example/nb_config.txt 
+```
+
+You should now see that the priors in the command-line output have changed:
+```
+Classifying scaffolds using the following priors:
+  Class  AD_mean  AD_sd  classProb
+0     X      2.0    0.2       0.15
+1     Y      0.0    0.1       0.05
+2  auto      1.0    0.2       0.80
+```
+
+You should also see different probabilities in the new output (out_classify.txt):
+| Scaffold | AD                    | X                     | Y                      | auto                  | MAP_value           | MAP  | X_J                | Y_J                 | auto_J             | JAYNE_value        | JAYNE |
+|----------|-----------------------|-----------------------|------------------------|-----------------------|---------------------|------|--------------------|---------------------|--------------------|--------------------|-------|
+| contig2  | 1.0756972111553786    | 6.887405018617033e-06 | 1.4901878706709654e-26 | 1.4854681583307487    | 1.4854681583307487  | auto | 204.9295125162716  | -208.36677945516135 | 311.60566700068665 | 311.60566700068665 | auto  |
+| contig1  | 2.0                   | 0.2992067103010745    | 2.7604741810799605e-88 | 5.946878058937202e-06 | 0.2992067103010745  | X    | 922.6069860634777  | -818.0927667306429  | 828.5733401463901  | 922.6069860634777  | X     |
+| contig3  | 0.0062499999999999995 | 7.884101409912027e-23 | 0.19908192834344332    | 6.949210837924389e-06 | 0.19908192834344332 | Y    | -162.4421512525781 | 265.6034414865151   | 176.46151447763825 | 265.6034414865151  | Y     |
 
 #### Classification using empirical allele-depth ratios
