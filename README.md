@@ -57,7 +57,7 @@ Description: Computes allele depth ratios from pileup data
 		-x	: Toggle to turn OFF plotting
 		-b	: Binwidth for plotting [default=0.1]
 		
-	ADratio arguments:
+	AD ratio arguments:
 		-c	: Normalizing constant, calculated as:
 			  # Sample 1 reads / # Sample 2 reads [Default=1.0]
 		-n	: Only count non-ambiguous (N) positions in reference
@@ -119,6 +119,40 @@ ADratio includes a few basic filtering options. Using the <-n> flag, all N (ambi
 
 For computation of the allele-depth ratio, the user can also specify a normalizing constant using <-c>. This is left to the user because the user may have certain criteria for which reads were used for mapping (e.g. removing duplicates), and can more easily calculate read counts using other tools such as samtools. 
 
+ADratio comes with a companion library called nbClassifier which provides a Gaussian Naive Bayes classifier. This can be used to assign scaffolds to chromosome classes (X-linked, etc) using a probabilistic model that allows a user-defined degree of variation around the expected values of X=2.0; Y=0.0; auto=1.0, including options for the user to customize however they want, and including options to weight the probability of each class (i.e. unconditional on AD value). By default, ADratio generates trhee Gaussian priors, each with a standard deviation of 0.1. This is an arbitrarily chosen value. The user can also specify their own Gaussian priors using the <-p> option to point to a parameter file, formatted like so:
+```
+Class	AD_mean	AD_sd	Prob
+X	2.0	0.1	1.0
+Y	0.0	0.05	1.0
+auto	1.0	0.2	1.0
+```
+Note that in this file, the "classes" can be anything (e.g. Z, W, X), and the values should all be non-negative. 
+
+If you have empirical data, ADratio can fit a classifier to those observed values using the <-F> option to point to the requisite file:
+```
+Name    AD
+X       2.00
+auto    1.07
+Y       0.006
+Y       0.01
+Y       0.23
+auto    1.43
+X       2.11
+X       2.65
+auto    0.999
+auto    0.8004
+auto    0.6
+auto    0.99
+auto    1.07
+auto    1.01
+auto    1.18
+...
+...
+...
+```
+
+Here, the class probabilities P(Class) will be taken as the proportion of observations (e.g. if 1% of scaffolds are Y; P(Y)=0.01). To make them all equal across classes, you can use the <-f> flag. 
+
 ### Output files
 
 The first outputs will be mean depths for each sample, in two files called $out_ind1_cov.txt and $out_ind2_cov.txt. These will be tab-delimited files with two columns:
@@ -156,6 +190,8 @@ Finally, unless plotting is turned off (using <-x>), you will receive a histogra
 
 Additionally, if using classification, you will get a version of this file with values colored by their classifications ($out_MAP_hist.pdf and $out_JAYNE_hist.pdf):
 ![alt text](https://github.com/tkchafin/ADratio/blob/main/images/example_jayne.png)
+
+You can control the binwidth of these plots using <-b>.
 
 ### Resuming previous runs 
 The script supports a few different options for resuming previous runs. This could be needed for example if something went wrong and a run didn't finish, or if you already have coverage information from a previous source and you just want to calculate allele-depth ratios. If the latter case, you should have two 'coverage' files formatted as above, and names like $out_ind1_cov.txt and $out_ind2_cov.txt (where $out = the output prefix for the run; -o). You can then skip the coverage calculation by calling ADratio with <-R 1>, which will skip straight to AD ratio calculations using the input coverage data. 
