@@ -364,7 +364,7 @@ Classifying scaffolds using the following priors:
 2  auto      1.0    0.2       0.80
 ```
 
-You should also see different probabilities in the new output (out_classify.txt):
+You should also see that, although the classification didn't change, the posterior probabilities and relative evidence values have by looking in the new output (out_classify.txt):
 | Scaffold | AD                    | X                     | Y                      | auto                  | MAP_value           | MAP  | X_J                | Y_J                 | auto_J             | JAYNE_value        | JAYNE |
 |----------|-----------------------|-----------------------|------------------------|-----------------------|---------------------|------|--------------------|---------------------|--------------------|--------------------|-------|
 | contig2  | 1.0756972111553786    | 6.887405018617033e-06 | 1.4901878706709654e-26 | 1.4854681583307487    | 1.4854681583307487  | auto | 204.9295125162716  | -208.36677945516135 | 311.60566700068665 | 311.60566700068665 | auto  |
@@ -372,3 +372,25 @@ You should also see different probabilities in the new output (out_classify.txt)
 | contig3  | 0.0062499999999999995 | 7.884101409912027e-23 | 0.19908192834344332    | 6.949210837924389e-06 | 0.19908192834344332 | Y    | -162.4421512525781 | 265.6034414865151   | 176.46151447763825 | 265.6034414865151  | Y     |
 
 #### Classification using empirical allele-depth ratios
+Finally, ADratio also allows setting priors using empirical data. An example empirical dataset is provided in example/nb_testfit.txt. There are a few ways you can run this: 1) Using the empirical frequencies (in addition to empirical AD values); or 2) Treating class frequencies as equal (<-f>). Here, we'll do the latter:
+```
+python3 ./ADratio.py -r example/ref.fa -1 example/sample1.bedgraph -2 example/sample2.bedgraph -m 10 -M 0.5 -n -N -J -F example/nb_testfit.txt -f
+```
+
+This time, ADratio should report reading the 'nb_testfit.txt' dataset, as well as the new empirical priors:
+```
+Fitting classifier using provided dataset: example/nb_testfit.txt
+
+Classifying scaffolds using the following priors:
+  Class   AD_mean     AD_sd  classProb
+0     X  1.975294  0.245575        1.0
+1     Y  0.073963  0.111899        1.0
+2  auto  0.964522  0.188521        1.0
+```
+
+And, once again, the probabilities change in response to the new priors:
+| Scaffold | AD                    | X                      | Y                      | auto                  | MAP_value          | MAP  | X_J                | Y_J                 | auto_J            | JAYNE_value        | JAYNE |
+|----------|-----------------------|------------------------|------------------------|-----------------------|--------------------|------|--------------------|---------------------|-------------------|--------------------|-------|
+| contig2  | 1.0756972111553786    | 0.0019805482214041224  | 1.412183808284889e-17  | 1.778411584521212     | 1.778411584521212  | auto | 138.96861914488574 | -143.96926471852058 | 198.0335563014142 | 198.0335563014142  | auto  |
+| contig1  | 2.0                   | 1.6163204137968048     | 1.6593872092108116e-64 | 5.948821904879058e-07 | 1.6163204137968048 | X    | 702.1414875258806  | -577.6301068711439  | 573.4595577108098 | 702.1414875258806  | X     |
+| contig3  | 0.0062499999999999995 | 1.7799141492436244e-14 | 2.9687218463039926     | 5.187030146205668e-06 | 2.9687218463039926 | Y    | -89.37089224985118 | 195.07251680880455  | 79.91950208219647 | 195.07251680880455 | Y     |
