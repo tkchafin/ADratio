@@ -155,7 +155,8 @@ Finally, unless plotting is turned off (using <-x>), you will receive a histogra
 ![alt text](https://github.com/tkchafin/ADratio/blob/main/images/example_noClass.png)
 
 Additionally, if using classification, you will get a version of this file with values colored by their classifications ($out_MAP_hist.pdf and $out_JAYNE_hist.pdf):
-![alt text](https://github.com/tkchafin/ADratio/blob/main/images/example_Jayne.png)
+![alt text](https://github.com/tkchafin/ADratio/blob/main/images/example_jayne.png)
+
 ### Resuming previous runs 
 The script supports a few different options for resuming previous runs. This could be needed for example if something went wrong and a run didn't finish, or if you already have coverage information from a previous source and you just want to calculate allele-depth ratios. If the latter case, you should have two 'coverage' files formatted as above, and names like $out_ind1_cov.txt and $out_ind2_cov.txt (where $out = the output prefix for the run; -o). You can then skip the coverage calculation by calling ADratio with <-R 1>, which will skip straight to AD ratio calculations using the input coverage data. 
 
