@@ -183,7 +183,7 @@ If Naive Bayes classification <-N> is turned on, results will be outputted into 
 Scaffold	AD	X	Y	auto	MAP	MAP_value	X_J	Y_J	auto_J	JAYNE	JAYNE_value
 ```
 
-The additional columns are the posterior probability for each class (X, Y, auto); the chosen class according to the maximum a posteriori estimate (MAP); the probability value for the MAP classification (MAP_value); and 5 additional columns only present when <-J>. These are: the relative evidence values for each (X_J, etc); the selected (highest evidence) classification (JAYNE); and the evidence value for the selected class (JAYNE_value). 
+The additional columns are the classification probability values for each class (X, Y, auto); the chosen class according to the maximum probability estimate (MAP); the probability value for the MAP classification (MAP_value); and 5 additional columns only present when <-J>. These are: the relative evidence values for each (X_J, etc); the selected (highest evidence) classification (JAYNE); and the evidence value for the selected class (JAYNE_value). 
 
 Finally, unless plotting is turned off (using <-x>), you will receive a histogram of the raw AD values ($out_hist.pdf): 
 ![alt text](https://github.com/tkchafin/ADratio/blob/main/images/example_noClass.png)
@@ -364,7 +364,7 @@ Classifying scaffolds using the following priors:
 2  auto      1.0    0.2       0.80
 ```
 
-You should also see that, although the classification didn't change, the posterior probabilities and relative evidence values have by looking in the new output (out_classify.txt):
+You should also see that, although the classification didn't change, the probabilities and relative evidence values have by looking in the new output (out_classify.txt):
 | Scaffold | AD                    | X                     | Y                      | auto                  | MAP_value           | MAP  | X_J                | Y_J                 | auto_J             | JAYNE_value        | JAYNE |
 |----------|-----------------------|-----------------------|------------------------|-----------------------|---------------------|------|--------------------|---------------------|--------------------|--------------------|-------|
 | contig2  | 1.0756972111553786    | 6.887405018617033e-06 | 1.4901878706709654e-26 | 1.4854681583307487    | 1.4854681583307487  | auto | 204.9295125162716  | -208.36677945516135 | 311.60566700068665 | 311.60566700068665 | auto  |
