@@ -18,77 +18,92 @@ def main():
 	minlen=0
 	read=0
 	kept=0
-	if params.ref:
-		print("\nReading reference genome",params.ref)
-		for contig in read_fasta(params.ref):
-			read+=1
-			if len(contig[1]) >= params.minlen:
-				name=contig[0]
-				if params.delim:
-					name=(contig[0].split(params.delim))[0]
+	if params.resume == 0:
+		if params.ref:
+			print("\nReading reference genome",params.ref)
+			for contig in read_fasta(params.ref):
+				read+=1
+				if len(contig[1]) >= params.minlen:
+					name=contig[0]
+					if params.delim:
+						name=(contig[0].split(params.delim))[0]
 
-				#If -n, gather map of N positions
-				pos=getSequencePositions(contig[1], "N", case_sensitive=False)
-				
-				#if too many Ns, skip contig
-				#print("Number Ns:",len(pos))
-				#print(float(len(pos))/float(len(contig[1])))
-				if (float(len(pos))/float(len(contig[1]))) > params.maxambig:
-					maxn+=1
+					#If -n, gather map of N positions
+					pos=getSequencePositions(contig[1], "N", case_sensitive=False)
+					
+					#if too many Ns, skip contig
+					#print("Number Ns:",len(pos))
+					#print(float(len(pos))/float(len(contig[1])))
+					if (float(len(pos))/float(len(contig[1]))) > params.maxambig:
+						maxn+=1
+					else:
+					#else (only keep data for passing scaffolds)
+					#keep ambiguous positions in a dictionary
+						if params.ambigskip:
+							if name not in reference_ambigs.keys():
+								reference_ambigs[name] = list()
+							reference_ambigs[name].append(pos)
+						#also save reference lengths for fast lookup later
+						reference_lengths[name] = len(contig[1])
+						kept+=1
 				else:
-				#else (only keep data for passing scaffolds)
-				#keep ambiguous positions in a dictionary
-					if params.ambigskip:
-						if name not in reference_ambigs.keys():
-							reference_ambigs[name] = list()
-						reference_ambigs[name].append(pos)
-					#also save reference lengths for fast lookup later
-					reference_lengths[name] = len(contig[1])
-					kept+=1
-			else:
-				minlen+=1
-				continue
-		print("\n\nTotal contigs read:",str(read))
-		if minlen > 0:
-			print("Contigs skipped below min length:",str(minlen))
-		if maxn > 0:
-			print("Contigs skipped above max N proportion:",str(maxn))
-		print("Kept",str(kept),"contigs.\n")
-		if kept <1:
-			print("\nNothing to do.\n")
+					minlen+=1
+					continue
+			print("\n\nTotal contigs read:",str(read))
+			if minlen > 0:
+				print("Contigs skipped below min length:",str(minlen))
+			if maxn > 0:
+				print("Contigs skipped above max N proportion:",str(maxn))
+			print("Kept",str(kept),"contigs.\n")
+			if kept <1:
+				print("\nNothing to do.\n")
+		else:
+			print("ERROR: No reference FASTA provided.")
+			sys.exit()
 	else:
-		print("ERROR: No reference FASTA provided.")
-		sys.exit()
+		print("Resuming from existing files...\n")
 	
-	#Parse individual 1 coverage
-	print("\nParsing bedgraph for individual 1:",params.sam1)
-	if params.ambigskip:
-		bad=reference_ambigs
+	if params.resume != 1:
+		#Parse individual 1 coverage
+		print("\nParsing bedgraph for individual 1:",params.sam1)
+		if params.ambigskip:
+			bad=reference_ambigs
+		else:
+			bad=None
+		cov1 = parseBedGraph(params.sam1, reference_lengths, bad)
+		oo=params.out+"_ind1"
+		writeCov(oo, cov1)
+		#print(cov1)
+		
+		#parse individual 2 coverage
+		print("\nParsing bedgraph for individual 2:",params.sam2)
+		if params.ambigskip:
+			bad=reference_ambigs
+		else:
+			bad=None
+		cov2 = parseBedGraph(params.sam2, reference_lengths, bad)
+		op=params.out+"_ind2"
+		writeCov(op, cov2)
+		#print(cov2)
 	else:
-		bad=None
-	cov1 = parseBedGraph(params.sam1, reference_lengths, bad)
-	oo=params.out+"_ind1"
-	writeCov(oo, cov1)
-	#print(cov1)
+		print("Reading coverage files...\n")
+		o1=params.out + "_ind1_cov.txt"
+		cov1=readCoverage(o1)
+		o2=params.out + "_ind2_cov.txt"
+		cov2=readCoverage(o2)
 	
-	#parse individual 2 coverage
-	print("\nParsing bedgraph for individual 2:",params.sam2)
-	if params.ambigskip:
-		bad=reference_ambigs
+	if resume != 2:
+		#Calculate normalized ADratio per-scaffold
+		print("\nComputing ADratio for each scaffold...")
+		print("...Using the normalizing constant:",str(params.constant))
+		adratios = computeADratios(cov1, cov2, params.constant)
+		#print(adratios)
+		dat=ADtoDF(adratios)
+		writeAD(adratios, params.out)
 	else:
-		bad=None
-	cov2 = parseBedGraph(params.sam2, reference_lengths, bad)
-	op=params.out+"_ind2"
-	writeCov(op, cov2)
-	#print(cov2)
-	
-	#Calculate normalized ADratio per-scaffold
-	print("\nComputing ADratio for each scaffold...")
-	print("...Using the normalizing constant:",str(params.constant))
-	adratios = computeADratios(cov1, cov2, params.constant)
-	#print(adratios)
-	dat=ADtoDF(adratios)
-	writeAD(adratios, params.out)
+		print("Reading ADratio file...\n")
+		oa=params.out + "_AD.txt"
+		ad=pd.read_table(oa, sep="\t", header=0)
 	
 	#if classification requested
 	if params.classify:
@@ -147,6 +162,9 @@ def writeCov(out, cov):
 	df=pd.DataFrame.from_dict(new, orient="columns")
 	df.to_csv(oname, sep="\t", header=True, quoting=None, index=False)
 
+def readCoverage(f):
+	df=pd.read_table(f, sep="\t", header=0)
+	return(dict(zip(df.Scaffold,df.MeanDepth)))
 
 def writeAD(ad, out):
 	oname=out + "_AD.txt"
@@ -156,7 +174,7 @@ def writeAD(ad, out):
 
 def ADtoDF(ad):
 	new=dict()
-	new["Name"]=list(ad.keys())
+	new["Scaffold"]=list(ad.keys())
 	new["AD"]=list(ad.values())
 	df=pd.DataFrame.from_dict(new, orient="columns")
 	#prettyPrint(df)
@@ -321,7 +339,7 @@ class parseArgs():
 	def __init__(self):
 		#Define options
 		try:
-			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:M:c:b:Np:P:xJj:F:f', \
+			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:M:c:b:Np:P:xJj:F:fR:', \
 			["help"])
 		except getopt.GetoptError as err:
 			print(err)
@@ -347,6 +365,8 @@ class parseArgs():
 		self.j_thresh=30
 		self.fitdata=None
 		self.equalprobs=False
+		
+		self.resume=0
 
 		#First pass to see if help menu was called
 		for o, a in options:
@@ -399,6 +419,11 @@ class parseArgs():
 				self.fitdata=arg
 			elif opt=="f":
 				self.equalprobs=True
+			elif opt=="R":
+				if int(arg) not in [1, 2]:
+					self.display_help("Invalid option for -R:",arg)
+				else:
+					self.resume==int(arg)
 			else:
 				assert False, "Unhandled option %r"%opt
 
@@ -406,7 +431,8 @@ class parseArgs():
 		if not self.ref:
 			self.display_help("No reference FASTA provided.")
 		if not self.sam1 or not self.sam2:
-			self.display_help("Must provide 2 sample files (-1, -2)")
+			if self.resume == 0:
+				self.display_help("Must provide 2 sample files (-1, -2)")
 
 
 
@@ -430,6 +456,7 @@ class parseArgs():
 		-o	: Output file prefix [default=out]
 		-x	: Toggle to turn OFF plotting
 		-b	: Binwidth for plotting [default=0.1]
+		-R	: Resume from: 1-Coverage files; 2-ADratio file
 		
 	ADratio arguments:
 		-c	: Normalizing constant, calculated as:
