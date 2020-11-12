@@ -11,7 +11,7 @@ Below I provide a description of options for running ADratio, as well as an exam
 
 ADratio is a Python3 program with the following dependencies:
 - numpy
-- seaborn
+- seaborn (only for plotting functions)
 - pandas
 
 These can be installed via [anaconda](https://www.anaconda.com/products/individual), or [pip](https://pip.pypa.io/en/stable/):
@@ -118,6 +118,48 @@ Below I provide an example pipeline using standard bioinformatics tools for gene
 ADratio includes a few basic filtering options. Using the <-n> flag, all N (ambiguous) positions in the reference scaffold sequences will be un-counted; meaning that they are both removed from the input bedGraphs, AND subtracted from the total scaffold length. This is to prevent bias caused by mapping to ambiguous positions. The user can also remove scaffolds below a certain length threshold <-m>, and specify a maximum allowable N proportion to retain a scaffold <-N>. 
 
 For computation of the allele-depth ratio, the user can also specify a normalizing constant using <-c>. This is left to the user because the user may have certain criteria for which reads were used for mapping (e.g. removing duplicates), and can more easily calculate read counts using other tools such as samtools. 
+
+### Output files
+
+The first outputs will be mean depths for each sample, in two files called $out_ind1_cov.txt and $out_ind2_cov.txt. These will be tab-delimited files with two columns:
+```
+Scaffold        MeanDepth
+LZNR01000001.1  21.240256760698635
+LZNR01000002.1  19.008165059060865
+LZNR01000003.1  4.991910840857328
+LZNR01000004.1  19.50037574791044
+LZNR01000005.1  17.31112428558967
+...
+...
+...
+```
+
+Raw AD ratios (without classification) will be output immediately after calculation in a file called $out_AD.txt. This file will be formatted in a similar fashion to the individual coverage files, but with the 2nd column containing the normalized AD ratio values for each scaffold:
+```
+Scaffold	AD
+LZNR01000001.1  1.995234
+LZNR01000002.1  0.006007
+...
+...
+...
+```
+
+If Naive Bayes classification <-N> is turned on, results will be outputted into a table called $out_classify.txt. If Jaynes evidence calculation (-J) is turned on, that will also be present as a column. The full file in that case would have the following columns:
+```
+Scaffold	AD	X	Y	auto	MAP	MAP_value	X_J	Y_J	auto_J	JAYNE	JAYNE_value
+```
+
+The additional columns are the posterior probability for each class (X, Y, auto); the chosen class according to the maximum a posteriori estimate (MAP); the probability value for the MAP classification (MAP_value); and 5 additional columns only present when <-J>. These are: the relative evidence values for each (X_J, etc); the selected (highest evidence) classification (JAYNE); and the evidence value for the selected class (JAYNE_value). 
+
+Finally, unless plotting is turned off (using <-x>), you will receive a histogram of the raw AD values ($out_hist.pdf): 
+![alt text](https://github.com/tkchafin/ADratio/blob/main/images/example_noClass.png)
+
+Additionally, if using classification, you will get a version of this file with values colored by their classifications ($out_MAP_hist.pdf and $out_JAYNE_hist.pdf):
+![alt text](https://github.com/tkchafin/ADratio/blob/main/images/example_Jayne.png)
+### Resuming previous runs 
+The script supports a few different options for resuming previous runs. This could be needed for example if something went wrong and a run didn't finish, or if you already have coverage information from a previous source and you just want to calculate allele-depth ratios. If the latter case, you should have two 'coverage' files formatted as above, and names like $out_ind1_cov.txt and $out_ind2_cov.txt (where $out = the output prefix for the run; -o). You can then skip the coverage calculation by calling ADratio with <-R 1>, which will skip straight to AD ratio calculations using the input coverage data. 
+
+You can also just run the classification model on already calculated AD ratios, by calling with <-R 2>. In this case, there should be a file called $out_AD.txt, formatted as above. 
 
 ### Important considerations when running ADratio
 *Heterochromosome scaffolds can only be assigned if they are logically present in the reference*. By this, I mean that, for example, in order to use ADratio to suggest that a scaffold is Y-linked, the individual from which the reference was sequenced should have actually had a Y-chromosome...
