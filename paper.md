@@ -20,10 +20,15 @@ bibliography: paper.bib
 
 # Summary
 
+Approaches to identifying sex-chromosome sequences in genome assemblies: Sex-detector (https://pubmed.ncbi.nlm.nih.gov/27492231/); synteny/ identity search; 
+Classical methods like FISH (https://www.karger.com/Article/Abstract/15113)
 
+https://onlinelibrary.wiley.com/doi/full/10.1111/imb.12602
+https://www.genetics.org/content/166/3/1291.short
 
 # Statement of need
 
+Identifying sex-chromosomes in scaffold- or contig- level genome assemblies is of significance both for practical reasons, such as aiding in the development of sex-deterministic markers (<CITE>)
 
 
 # Performance and testing
