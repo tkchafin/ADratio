@@ -92,7 +92,7 @@ def main():
 		o2=params.out + "_ind2_cov.txt"
 		cov2=readCoverage(o2)
 	
-	if resume != 2:
+	if params.resume != 2:
 		#Calculate normalized ADratio per-scaffold
 		print("\nComputing ADratio for each scaffold...")
 		print("...Using the normalizing constant:",str(params.constant))
@@ -100,10 +100,17 @@ def main():
 		#print(adratios)
 		dat=ADtoDF(adratios)
 		writeAD(adratios, params.out)
+		#delete cov data; not needed any more 
+		del cov1
+		del cov2
+		del adratios
 	else:
 		print("Reading ADratio file...\n")
 		oa=params.out + "_AD.txt"
-		ad=pd.read_table(oa, sep="\t", header=0)
+		adratios=pd.read_table(oa, sep="\t", header=0)
+		dat=ADtoDF(adratios)
+		del adratios
+	
 	
 	#if classification requested
 	if params.classify:
@@ -269,7 +276,7 @@ def getMeanDepth(depths, exclude_chars=None):
 	"""
 	#print(depths)
 	if exclude_chars:
-		print(exclude_chars[0])
+		#print(exclude_chars[0])
 		j=sorted(exclude_chars[0], reverse=True)
 		j2=[i for i in j if i < len(depths)]
 		depths[j2] = np.nan
@@ -423,7 +430,7 @@ class parseArgs():
 				if int(arg) not in [1, 2]:
 					self.display_help("Invalid option for -R:",arg)
 				else:
-					self.resume==int(arg)
+					self.resume=int(arg)
 			else:
 				assert False, "Unhandled option %r"%opt
 
