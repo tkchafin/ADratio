@@ -119,6 +119,10 @@ ADratio includes a few basic filtering options. Using the <-n> flag, all N (ambi
 
 For computation of the allele-depth ratio, the user can also specify a normalizing constant using <-c>. This is left to the user because the user may have certain criteria for which reads were used for mapping (e.g. removing duplicates), and can more easily calculate read counts using other tools such as samtools. 
 
+### Important considerations when running ADratio
+*Heterochromosome scaffolds can only be assigned if they are logically present in the reference*. By this, I mean that, for example, in order to use ADratio to suggest that a scaffold is Y-linked, the individual from which the reference was sequenced should have actually had a Y-chromosome...
+
+*Individual 1 should almost always be the female*. For most use cases, the XX individual should be <-1> and the XY individual <-2>. This is because, under the expected 0:1 ratio for Y DNA between the XX and XY individual, if they were reversed it would create a divide-by-zero error. In those cases, ADratio will *SKIP* the scaffold. So, there are actually two important notes here: 1) To identify a Y chromosome, <-1> must be XX and <-2> XY; and 2) Any scaffolds exclusively present in the <-2> individual 
 
 # Example pipeline 
 
@@ -140,7 +144,7 @@ java -jar /share/apps/bioinformatics/trimmomatic/Trimmomatic-0.36/trimmomatic-0.
 #trimming female sequences (with crop to 125bp)
 java -jar /share/apps/bioinformatics/trimmomatic/Trimmomatic-0.36/trimmomatic-0.36.jar PE -threads 32 SRR830685_1.fastq.gz SRR830685_2.fastq.gz female_R1.fq.gz female_unpaired_R1.fq.gz female_R2.fq.gz female_unpaired_R2.fq.gz ILLUMINACLIP:TruSeq3-PE.fa:2:30:10:2:keepBothReads LEADING:3 TRAILING:3 MINLEN:36 SLIDINGWINDOW:4:15 CROP:125
 ```
-Next, I mapped the trimmed reads to the available [black bear genome assembly](https://www.ncbi.nlm.nih.gov/assembly/GCA_003344425.1/), which at the time of writing was scaffold-level with N=111,495 scaffolds and a scaffold N50 of ~190k. We'll be removing scaffolds below a length threshold later. I performed the mapping using [bwa mem](http://bio-bwa.sourceforge.net/):
+Next, I mapped the trimmed reads to the available [black bear genome assembly](https://www.ncbi.nlm.nih.gov/assembly/GCA_003344425.1/), which at the time of writing was scaffold-level with N=111,495 scaffolds and a scaffold N50 of ~190k. It goes without saying that in order to assign Y-chromosome scaffolds, they must be present in the assembly... In this case, the individual from which raw reads were generated for our reference assembly *was male*, so we're good to go! We'll be removing scaffolds below a length threshold later. I performed the mapping using [bwa mem](http://bio-bwa.sourceforge.net/):
 
 ```
 #indexing the reference genome 
