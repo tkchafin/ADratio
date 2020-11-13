@@ -433,4 +433,11 @@ Minimap2 completed in about 30 minutes. Next, I used [pafScaff](https://github.c
 python3 ./pafscaff/code/pafscaff.py pafin=bba_canFam.paf basefile=bba_pafscaff reference=canFam_chroms_plusY.fasta assembly=GCA_003344425.1_ASM334442v1_genomic.fna sorted=RefStart forks=16
 ```
 
-This took a few hours to complete all the way through, even spread across 16 cores. 
+This took about 1 hour and 15 minutes to complete all the way through, even spread across 16 cores. The result was 27,918 scaffolds placed with respect to assembled chromosomes in the canFam3.1 reference, and 60,367 unplaced. I then compared the *placed scaffolds only* to the assignments made by ADratio. 
+
+First, I converted labels to match those used by ADratio: 
+```
+sed... CM000001.3 to CM000038.1 -> auto
+CM000039.3 -> X
+KP081776.1 -> Y
+```
