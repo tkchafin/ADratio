@@ -435,9 +435,19 @@ python3 ./pafscaff/code/pafscaff.py pafin=bba_canFam.paf basefile=bba_pafscaff r
 
 This took about 1 hour and 15 minutes to complete all the way through, even spread across 16 cores. The result was 27,918 scaffolds placed with respect to assembled chromosomes in the canFam3.1 reference, and 60,367 unplaced. I then compared the *placed scaffolds only* to the assignments made by ADratio. 
 
-First, I converted labels to match those used by ADratio: 
+First, I converted labels to match those used by ADratio. There's probably a cleaner way to do this, but here's a messy string of sed commands I used: 
 ```
-sed... CM000001.3 to CM000038.1 -> auto
-CM000039.3 -> X
-KP081776.1 -> Y
+#CM000001.3 to CM000038.1 -> auto
+#CM000039.3 -> X
+#KP081776.1 -> Y
+less bba_pafscaff.placed.fasta | grep ">" | awk 'BEGIN{FS=" "}{print $1 "\t" $6 "\t" $7}' | sed "s/>//g" | sed "s/(.*//g" | sed -r "s/[0-9]+\.[0-9]+%\t//g" | sed -r "s/CM0+//g" | sed "s/39.3/X/g" | sed "s/KP081776.1/Y/g" | sed -r "s/[0-9]+\.3/auto/g" > bba_pafscaff_map.txt
 ```
+
+To see how many scaffolds were placed as X, Y, or autosome, you can do: 
+```
+$ cat bba_pafscaff_map.txt | awk '{print $2}' | sort | uniq -c
+  27464 auto
+    453 X
+      1 Y
+```
+Unfortunately, only one scaffold was placed to the canine Y chromosome. To check how these scaffolds 
