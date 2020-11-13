@@ -379,13 +379,20 @@ You should also see that, although the classification didn't change, the probabi
 | contig3  | 0.0062499999999999995 | 7.884101409912027e-23 | 0.19908192834344332    | 6.949210837924389e-06 | 0.19908192834344332 | Y    | -162.4421512525781 | 265.6034414865151   | 176.46151447763825 | 265.6034414865151  | Y     |
 
 #### Classification using empirical allele-depth ratios
-Finally, ADratio also allows setting priors using empirical data. An example empirical dataset is provided in example/nb_testfit.txt. There are a few ways you can run this: 1) Using the empirical frequencies (in addition to empirical AD values); or 2) Treating class frequencies as equal (<-f>). Here, we'll do the latter:
+Finally, ADratio also allows setting priors using empirical data. An example empirical dataset is provided in example/nb_testfit.txt. There are a few ways you can run this: 1) Using the empirical frequencies (in addition to empirical AD values); or 2) Treating class frequencies as equal (<-f>). Here, we'll do the latter. Let's also suppose we want to re-use the coverage data already calculated by the earlier runs. In this case, we can additionally add the <-R 1> flag:
 ```
-python3 ./ADratio.py -r example/ref.fa -1 example/sample1.bedgraph -2 example/sample2.bedgraph -m 10 -M 0.5 -n -N -J -F example/nb_testfit.txt -f
+python3 ./ADratio.py -r example/ref.fa -1 example/sample1.bedgraph -2 example/sample2.bedgraph -m 10 -M 0.5 -n -N -J -F example/nb_testfit.txt -f -R 1
 ```
 
 This time, ADratio should report reading the 'nb_testfit.txt' dataset, as well as the new empirical priors:
 ```
+Reading coverage files...
+
+
+Computing ADratio for each scaffold...
+...Using the normalizing constant: 1.0
+Outputting AD results to: out_AD.txt
+
 Fitting classifier using provided dataset: example/nb_testfit.txt
 
 Classifying scaffolds using the following priors:
