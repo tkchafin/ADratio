@@ -416,38 +416,3 @@ And, once again, the probabilities change in response to the new priors:
 | contig1  | 2.0                   | 1.6163204137968048     | 1.6593872092108116e-64 | 5.948821904879058e-07 | 1.6163204137968048 | X    | 702.1414875258806  | -577.6301068711439  | 573.4595577108098 | 702.1414875258806  | X     |
 | contig3  | 0.0062499999999999995 | 1.7799141492436244e-14 | 2.9687218463039926     | 5.187030146205668e-06 | 2.9687218463039926 | Y    | -89.37089224985118 | 195.07251680880455  | 79.91950208219647 | 195.07251680880455 | Y     |
 
-## Validation
-In the case that a fully assembled genome with a complementary Y-chromosome assembly does exist (...there aren't many...), you can compare the results of ADratio with candidate chromosome assignments with candidate assignments creating by mapping against the genome. For the black bear dataset used in the above example, I here present a comparison using the dog genome (canFam3.1). 
-
-First, I downloaded the canFam3.1 assembly, and excluded unplaced scaffolds. You can access the assembly here: https://www.ncbi.nlm.nih.gov/assembly/GCF_000002285.3/. Next, I also downloaded the available Y-chromosome assembly for Canis familiaris: https://www.ncbi.nlm.nih.gov/nuccore/KP081776. I then concatenated these to form my full reference:
-```
-cat *.fna > canFam_chroms_plusY.fasta
-```
-
-I then mapped my scaffolds using [minimap2](https://github.com/lh3/minimap2): 
-```
-minimap2 -cx asm20 --cs canFam_chroms_plusY.fasta GCA_003344425.1_ASM334442v1_genomic.fna > bba_canFam.paf
-```
-Minimap2 completed in about 30 minutes. Next, I used [pafScaff](https://github.com/slimsuite/pafscaff) to clean up and improve the scaffolding:
-```
-python3 ./pafscaff/code/pafscaff.py pafin=bba_canFam.paf basefile=bba_pafscaff reference=canFam_chroms_plusY.fasta assembly=GCA_003344425.1_ASM334442v1_genomic.fna sorted=RefStart forks=16
-```
-
-This took about 1 hour and 15 minutes to complete all the way through, even spread across 16 cores. The result was 27,918 scaffolds placed with respect to assembled chromosomes in the canFam3.1 reference, and 60,367 unplaced. I then compared the *placed scaffolds only* to the assignments made by ADratio. 
-
-First, I converted labels to match those used by ADratio. There's probably a cleaner way to do this, but here's a messy string of sed commands I used: 
-```
-#CM000001.3 to CM000038.1 -> auto
-#CM000039.3 -> X
-#KP081776.1 -> Y
-less bba_pafscaff.placed.fasta | grep ">" | awk 'BEGIN{FS=" "}{print $1 "\t" $6 "\t" $7}' | sed "s/>//g" | sed "s/(.*//g" | sed -r "s/[0-9]+\.[0-9]+%\t//g" | sed -r "s/CM0+//g" | sed "s/39.3/X/g" | sed "s/KP081776.1/Y/g" | sed -r "s/[0-9]+\.3/auto/g" > bba_pafscaff_map.txt
-```
-
-To see how many scaffolds were placed as X, Y, or autosome, you can do: 
-```
-$ cat bba_pafscaff_map.txt | awk '{print $2}' | sort | uniq -c
-  27464 auto
-    453 X
-      1 Y
-```
-Unfortunately, only one scaffold was placed to the canine Y chromosome. To check how these scaffolds 
