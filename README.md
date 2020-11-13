@@ -421,4 +421,7 @@ I then mapped my scaffolds using [minimap2](https://github.com/lh3/minimap2):
 ```
 minimap2 -cx asm20 --cs canFam_chroms_plusY.fasta GCA_003344425.1_ASM334442v1_genomic.fna > bba_canFam.paf
 ```
-
+Next, I used [pafScaff](https://github.com/slimsuite/pafscaff) to clean up and improve the scaffolding:
+```
+python pafscaff.py pafin=refmap_asm20.paf basefile=refmap_asm20_pafscaff reference=ref.fasta assembly=query.fasta refprefix=chr newprefix=query unplaced=unplaced_ sorted=RefStart forks=2
+```
