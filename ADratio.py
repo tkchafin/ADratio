@@ -92,7 +92,7 @@ def main():
 		o2=params.out + "_ind2_cov.txt"
 		cov2=readCoverage(o2)
 	
-	if params.resume != 2:
+	if params.resume not in [2, 3]:
 		#Calculate normalized ADratio per-scaffold
 		print("\nComputing ADratio for each scaffold...")
 		print("...Using the normalizing constant:",str(params.constant))
@@ -113,48 +113,49 @@ def main():
 	
 	
 	#if classification requested
-	if params.classify:
-		classifier = nb.nbClassifier()
-		if params.config:
-			priors = pd.read_table(params.config, sep="\t", header=0)
-		else:
-			priors = getDefaultPriors()
-		if not params.fitdata:
-			classifier.initFromTable(priors)
-		else:
-			print("\nFitting classifier using provided dataset:",params.fitdata)
-			fdf=pd.read_table(params.fitdata, sep="\t", header=0)
-			classifier.fit(fdf)
-			if params.equalprobs:
-				classifier.setProbsEqual()
-		print("\nClassifying scaffolds using the following priors:")
-		classifier.printPriors()
-		
-		#dat=pd.read_table("example/nb_testdata.txt", sep="\t", header=0)
-		#dat=pd.read_table("example/nb_testfit.txt", sep="\t")
-		dat_class=classifier.classify(dat)
-		dat_class=classifier.getMAP(dat_class, params.map_thresh)
-		if params.jaynes:
-			dat_class=classifier.getJaynes(dat_class, params.j_thresh)
-		#prettyPrint(dat_class)
-		
-		#output classification table
-		oname=params.out+"_classify.txt"
-		print("\nOutputting classified results to:",oname)
-		dat_class.to_csv(oname, sep="\t", header=True, quoting=None, index=False)
+	if params.resume != 3:
+		if params.classify:
+			classifier = nb.nbClassifier()
+			if params.config:
+				priors = pd.read_table(params.config, sep="\t", header=0)
+			else:
+				priors = getDefaultPriors()
+			if not params.fitdata:
+				classifier.initFromTable(priors)
+			else:
+				print("\nFitting classifier using provided dataset:",params.fitdata)
+				fdf=pd.read_table(params.fitdata, sep="\t", header=0)
+				classifier.fit(fdf)
+				if params.equalprobs:
+					classifier.setProbsEqual()
+			print("\nClassifying scaffolds using the following priors:")
+			classifier.printPriors()
+			
+			#dat=pd.read_table("example/nb_testdata.txt", sep="\t", header=0)
+			#dat=pd.read_table("example/nb_testfit.txt", sep="\t")
+			dat_class=classifier.classify(dat)
+			dat_class=classifier.getMAP(dat_class, params.map_thresh)
+			if params.jaynes:
+				dat_class=classifier.getJaynes(dat_class, params.j_thresh)
+			#prettyPrint(dat_class)
+			
+			#output classification table
+			oname=params.out+"_classify.txt"
+			print("\nOutputting classified results to:",oname)
+			dat_class.to_csv(oname, sep="\t", header=True, quoting=None, index=False)
 		
 	#Make plots
 	if not params.noPlots:
 		#histogram of AD values
 		if params.classify:
 			o=params.out + "_MAP"
-			plot.plotADclassified(dat_class, o, "MAP", params.binwidth)
+			plot.plotADclassified(dat_class, o, "MAP", binwidth=params.binwidth, y=params.ylim, x=params.xlim)
 			if params.jaynes:
 				o2=params.out + "_JAYNE"
-				plot.plotADclassified(dat_class, o2, "JAYNE", params.binwidth)
+				plot.plotADclassified(dat_class, o2, "JAYNE", binwidth=params.binwidth, y=params.ylim, x=params.xlim)
 		else:
 			#dat=pd.read_table("example/nb_testfit.txt", sep="\t")
-			plot.plotAD(dat, params.out, params.binwidth)
+			plot.plotAD(dat, params.out, binwidth=params.binwidth, y=params.ylim, x=params.xlim)
 			
 		
 	print("\nDone!\n")
@@ -348,7 +349,7 @@ class parseArgs():
 	def __init__(self):
 		#Define options
 		try:
-			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:M:c:b:Np:P:xJj:F:fR:', \
+			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:M:c:b:Np:P:xJj:F:fR:X:Y:', \
 			["help"])
 		except getopt.GetoptError as err:
 			print(err)
@@ -376,6 +377,8 @@ class parseArgs():
 		self.equalprobs=False
 		
 		self.resume=0
+		self.xlim=None
+		self.ylim=None
 
 		#First pass to see if help menu was called
 		for o, a in options:
@@ -428,8 +431,12 @@ class parseArgs():
 				self.fitdata=arg
 			elif opt=="f":
 				self.equalprobs=True
+			elif opt=="X":
+				self.xlim=float(arg)
+			elif opt=="Y":
+				self.ylim=float(arg)
 			elif opt=="R":
-				if int(arg) not in [1, 2]:
+				if int(arg) not in [1, 2, 3]:
 					self.display_help("Invalid option for -R:",arg)
 				else:
 					self.resume=int(arg)
@@ -463,9 +470,7 @@ class parseArgs():
 	Optional arguments:
 		-d	: FASTA header delimiter [default=None]
 		-o	: Output file prefix [default=out]
-		-x	: Toggle to turn OFF plotting
-		-b	: Binwidth for plotting [default=0.1]
-		-R	: Resume from: 1-Coverage files; 2-ADratio file
+		-R	: Resume from: 1-Coverage files; 2-ADratio file; 3-Classify file
 		
 	ADratio arguments:
 		-c	: Normalizing constant, calculated as:
@@ -475,7 +480,7 @@ class parseArgs():
 		-M	: Maximum proportion of Ns to retain a contig [default=0.5]
 		
 	Classifier arguments:
-		-N	: Toggle to classify scaffolds to chromosome type (e.g. X, Y, autosome)
+		-N	: Toggle to classify scaffolds to chromosome type (e.g. X, Y, aut)
 		-p	: (Optional) Params file to customize chr type priors
 			   See documentation. By default, we assume three Gaussian 
 			   priors representing how we expect ADratio to vary by chr type:
@@ -497,6 +502,12 @@ class parseArgs():
 		-P	: Maximum a posteriori (MAP) threshold to keep a classification 
 		-J	: Toggle on to calculate Jayne's 'evidence' for each class
 		-j	: Jayne's evidence (db) threshold [default=30]
+		
+	Plotting arguments
+		-x	: Toggle to turn OFF plotting
+		-b	: Binwidth for plotting [default=0.1]
+		-X	: X-limit for plotting [default=None]
+		-Y	: Y-limit for plotting [default=None]
 
 """)
 		print()

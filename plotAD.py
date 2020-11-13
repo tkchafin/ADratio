@@ -2,7 +2,7 @@ import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-def plotAD(dat, out, binwidth=0.1):
+def plotAD(dat, out, binwidth=0.1, y=None, x=None):
 	sns.set_theme(style="ticks")
 	f, ax = plt.subplots(figsize=(7, 5))
 	sns.despine()
@@ -17,11 +17,13 @@ def plotAD(dat, out, binwidth=0.1):
 		stat='frequency',
 		binwidth=0.1
 	)
+	plt.ylim(0, y)
+	plt.xlim(0, x)
 	oname=out + "_hist.pdf"
 	#plt.show()
 	sns_plot.figure.savefig(oname, dpi=400)
 
-def plotADclassified(dat, out, cls, binwidth=0.1):
+def plotADclassified(dat, out, cls, binwidth=0.1, y=None, x=None):
 	sns.set_theme(style="ticks")
 	f, ax = plt.subplots(figsize=(7, 5))
 	sns.despine()
@@ -36,6 +38,10 @@ def plotADclassified(dat, out, cls, binwidth=0.1):
 		stat='frequency',
 		binwidth=0.1
 	)
+	plt.ylim(0, y)
+	plt.xlim(0, x)
+
+	
 	oname=out + "_hist.pdf"
 	#plt.show()
 	sns_plot.figure.savefig(oname, dpi=400)
