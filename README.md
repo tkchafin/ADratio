@@ -24,7 +24,7 @@ pip3 install numpy pandas seaborn
 ```
 
 ## Allele depth ratios
-The 'allele depth ratio' can be used to identify sex-linked chromosomes in [heterogametic](https://en.wikipedia.org/wiki/Heterogametic_sex) species. For example, in a species in which males have XY and females XX, the results of whole-genome shotgun sequencing should produce roughly twice as many X chromosome reads for the female than the male (2:1 ratio), and essentially no coverage of the Y chromosome in females (0:1). Autosomes, however, are expected to be ~1:1 between the two sexes. This expectation allows us to potentially classify scaffolds or contigs as being sex-linked without having access to a chromosome-level assembly. To do so, we simply calculate for *each scaffold* the ratio female mean depth / male mean depth, multiplied by a normalizing constant (=total female reads/total male reads). The normalizing constant is required because biased sequencing effort towards one of the two samples will skew the mean depths. In an XY system, the X chromosome is expected to have an ADratio ~= 2.0; the Y chromosome ~= 0.0; and an autosome ~= 2.0. 
+The 'allele depth ratio' can be used to identify sex-linked chromosomes in [heterogametic](https://en.wikipedia.org/wiki/Heterogametic_sex) species. For example, in a species in which males have XY and females XX, the results of whole-genome shotgun sequencing should produce roughly twice as many X chromosome reads for the female than the male (2:1 ratio), and essentially no coverage of the Y chromosome in females (0:1). Autosomes, however, are expected to be ~1:1 between the two sexes. This expectation allows us to potentially classify scaffolds or contigs as being sex-linked without having access to a chromosome-level assembly. To do so, we simply calculate for *each scaffold* the ratio female mean depth / male mean depth, multiplied by a normalizing constant (=total male reads/total female reads). The normalizing constant is required because biased sequencing effort towards one of the two samples will skew the mean depths. In an XY system, the X chromosome is expected to have an ADratio ~= 2.0; the Y chromosome ~= 0.0; and an autosome ~= 2.0. 
 
 ## Classification in ADratio
 
@@ -59,7 +59,7 @@ Description: Computes allele depth ratios from pileup data
 		
 	AD ratio arguments:
 		-c	: Normalizing constant, calculated as:
-			  # Sample 1 reads / # Sample 2 reads [Default=1.0]
+			  # Sample 2 reads / # Sample 1 reads [Default=1.0]
 		-n	: Only count non-ambiguous (N) positions in reference
 		-m	: Minimum scaffold length to report [default=None]
 		-M	: Maximum proportion of Ns to retain a contig [default=0.5]
@@ -263,11 +263,11 @@ Finally, I produced the exact output needed for ADratio.py using the [genomecov]
 /share/apps/bioinformatics/bedtools2/2.25.0/bin/bedtools genomecov -d -ibam male_removeDups.bam > male_coverage.txt
 ```
 
-The normalizing constant was then calculated using samtools applied to each of the filtered bam files:
+The normalizing constant was then calculated using samtools applied to each of the filtered bam files, then dividing the total number of (passing) male reads by the total female reads:
 ```
 samtools view -c -F 260 XXX_removeDups.bam
 ```
-In this case, the normalizing constant was 0.997, so very close to the default used by ADratio. 
+In this case, the normalizing constant was 1.003, so very close to the default used by ADratio. 
 
 That's it! After completing these steps you can run ADratio. Note that the runtimes can be *considerable* depending on the amount of sequence data, your genome size, and the specifics of your machine (e.g. # available cores), so running on an HPC is recommended. For reference, here are rough runtimes for the example above: Trimmomatic: ~3 hours per individual; BWA+samtools: ~12 hours (with 32 cores; CPU time ~70 hours); Picard MarkDuplicates: ~4 hours (CPU time 9 hours); bedtools genomecov: 12 hours. Benchmarking ADratio for these files is also presented below. 
 
