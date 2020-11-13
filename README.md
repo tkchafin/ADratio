@@ -278,7 +278,7 @@ You can then run ADratio, using the default classification priors, excluding N p
 
 ### Test cases using example files
 
-ADratio using the above large dataset (>300 million reads per sample and XXX scaffolds), ADratio took 1 hour and 13 minutes to parse both bedGraph files (~75000 scaffolds each after removing short and high N-content scaffolds) and calculate mean depth of coverage for all scaffolds. This step is a bit faster when not skipping N bases (<-n>), but I still recommend using that option as mapping depths can be misleading in scaffolds regions with high ambiguity. Calculating allele-depth ratios and performing classification using default priors took an additional XXX
+ADratio using the above large dataset (>300 million reads per sample and XXX scaffolds), ADratio took 1 hour and 13 minutes to parse both bedGraph files (~75000 scaffolds each after removing short and high N-content scaffolds) and calculate mean depth of coverage for all scaffolds. This step is a bit faster when not skipping N bases (<-n>), but I still recommend using that option as mapping depths can be misleading in scaffolds regions with high ambiguity. However, this is by far the most time-consuming step, as it requires parsing very large numbers of intervals from the bedGraph files. Calculating allele-depth ratios and performing classification using default priors from the resulting coverage data only took an additional *30 seconds*, including evidence calculations and plotting. 
 
 #### Full run; classification with default priors
 
