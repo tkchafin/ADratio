@@ -408,3 +408,17 @@ And, once again, the probabilities change in response to the new priors:
 | contig2  | 1.0756972111553786    | 0.0019805482214041224  | 1.412183808284889e-17  | 1.778411584521212     | 1.778411584521212  | auto | 138.96861914488574 | -143.96926471852058 | 198.0335563014142 | 198.0335563014142  | auto  |
 | contig1  | 2.0                   | 1.6163204137968048     | 1.6593872092108116e-64 | 5.948821904879058e-07 | 1.6163204137968048 | X    | 702.1414875258806  | -577.6301068711439  | 573.4595577108098 | 702.1414875258806  | X     |
 | contig3  | 0.0062499999999999995 | 1.7799141492436244e-14 | 2.9687218463039926     | 5.187030146205668e-06 | 2.9687218463039926 | Y    | -89.37089224985118 | 195.07251680880455  | 79.91950208219647 | 195.07251680880455 | Y     |
+
+## Validation
+In the case that a fully assembled genome with a complementary Y-chromosome assembly does exist (...there aren't many...), you can compare the results of ADratio with candidate chromosome assignments with candidate assignments creating by mapping against the genome. For the black bear dataset used in the above example, I here present a comparison using the dog genome (canFam3.1). 
+
+First, I downloaded the canFam3.1 assembly, and excluded unplaced scaffolds. You can access the assembly here: https://www.ncbi.nlm.nih.gov/assembly/GCF_000002285.3/. Next, I also downloaded the available Y-chromosome assembly for Canis familiaris: https://www.ncbi.nlm.nih.gov/nuccore/KP081776. I then concatenated these to form my full reference:
+```
+cat *.fna > canFam_chroms_plusY.fasta
+```
+
+I then mapped my scaffolds using [minimap2](https://github.com/lh3/minimap2): 
+```
+minimap2 -cx asm20 --cs canFam_chroms_plusY.fasta GCA_003344425.1_ASM334442v1_genomic.fna > bba_canFam.paf
+```
+
