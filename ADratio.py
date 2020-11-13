@@ -210,6 +210,8 @@ def computeADratios(cov1, cov2, constant=1.0):
 			d2=float(cov2[contig])
 		else:
 			continue
+		if d2 <= 0.0:
+			continue
 		ad[contig] = (d1/d2) * constant
 	return(ad)
 
