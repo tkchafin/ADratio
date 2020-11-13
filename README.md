@@ -54,12 +54,11 @@ Description: Computes allele depth ratios from pileup data
 	Optional arguments:
 		-d	: FASTA header delimiter [default=None]
 		-o	: Output file prefix [default=out]
-		-x	: Toggle to turn OFF plotting
-		-b	: Binwidth for plotting [default=0.1]
+		-R	: Resume from: 1-Coverage files; 2-ADratio file
 		
-	AD ratio arguments:
+	ADratio arguments:
 		-c	: Normalizing constant, calculated as:
-			  # Sample 2 reads / # Sample 1 reads [Default=1.0]
+			  # Sample 1 reads / # Sample 2 reads [Default=1.0]
 		-n	: Only count non-ambiguous (N) positions in reference
 		-m	: Minimum scaffold length to report [default=None]
 		-M	: Maximum proportion of Ns to retain a contig [default=0.5]
@@ -87,6 +86,12 @@ Description: Computes allele depth ratios from pileup data
 		-P	: Maximum a posteriori (MAP) threshold to keep a classification 
 		-J	: Toggle on to calculate Jayne's 'evidence' for each class
 		-j	: Jayne's evidence (db) threshold [default=30]
+		
+	Plotting arguments
+		-x	: Toggle to turn OFF plotting
+		-b	: Binwidth for plotting [default=0.1]
+		-X	: X-limit for plotting [default=None]
+		-Y	: Y-limit for plotting [default=None]
 ```
 
 The meaning of these various options, and the format of the required inputs, are discussed below. Also note that this assumes your Python3 interpreter is installed at /usr/bin/python... If this isn't the case, you can specify python like so:
