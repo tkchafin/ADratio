@@ -54,7 +54,7 @@ Description: Computes allele depth ratios from pileup data
 	Optional arguments:
 		-d	: FASTA header delimiter [default=None]
 		-o	: Output file prefix [default=out]
-		-R	: Resume from: 1-Coverage files; 2-ADratio file
+		-R	: Resume from: 1-Coverage files; 2-ADratio file; 3-Classify file
 		
 	ADratio arguments:
 		-c	: Normalizing constant, calculated as:
@@ -64,7 +64,7 @@ Description: Computes allele depth ratios from pileup data
 		-M	: Maximum proportion of Ns to retain a contig [default=0.5]
 		
 	Classifier arguments:
-		-N	: Toggle to classify scaffolds to chromosome type (e.g. X, Y, autosome)
+		-N	: Toggle to classify scaffolds to chromosome type (e.g. X, Y, aut)
 		-p	: (Optional) Params file to customize chr type priors
 			   See documentation. By default, we assume three Gaussian 
 			   priors representing how we expect ADratio to vary by chr type:
@@ -92,6 +92,8 @@ Description: Computes allele depth ratios from pileup data
 		-b	: Binwidth for plotting [default=0.1]
 		-X	: X-limit for plotting [default=None]
 		-Y	: Y-limit for plotting [default=None]
+		-S	: Histogram stat [default='frequency']
+			  Options: count, frequency, density, probability
 ```
 
 The meaning of these various options, and the format of the required inputs, are discussed below. Also note that this assumes your Python3 interpreter is installed at /usr/bin/python... If this isn't the case, you can specify python like so:
