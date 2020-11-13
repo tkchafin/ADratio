@@ -432,3 +432,5 @@ Minimap2 completed in about 30 minutes. Next, I used [pafScaff](https://github.c
 ```
 python3 ./pafscaff/code/pafscaff.py pafin=bba_canFam.paf basefile=bba_pafscaff reference=canFam_chroms_plusY.fasta assembly=GCA_003344425.1_ASM334442v1_genomic.fna sorted=RefStart forks=16
 ```
+
+This took a few hours to complete all the way through, even spread across 16 cores. 
