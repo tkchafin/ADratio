@@ -149,13 +149,13 @@ def main():
 		#histogram of AD values
 		if params.classify:
 			o=params.out + "_MAP"
-			plot.plotADclassified(dat_class, o, "MAP", binwidth=params.binwidth, y=params.ylim, x=params.xlim)
+			plot.plotADclassified(dat_class, o, "MAP", stat=params.stat, binwidth=params.binwidth, y=params.ylim, x=params.xlim)
 			if params.jaynes:
 				o2=params.out + "_JAYNE"
-				plot.plotADclassified(dat_class, o2, "JAYNE", binwidth=params.binwidth, y=params.ylim, x=params.xlim)
+				plot.plotADclassified(dat_class, o2, "JAYNE", stat=params.stat, binwidth=params.binwidth, y=params.ylim, x=params.xlim)
 		else:
 			#dat=pd.read_table("example/nb_testfit.txt", sep="\t")
-			plot.plotAD(dat, params.out, binwidth=params.binwidth, y=params.ylim, x=params.xlim)
+			plot.plotAD(dat, params.out, stat=params.stat, binwidth=params.binwidth, y=params.ylim, x=params.xlim)
 			
 		
 	print("\nDone!\n")
@@ -349,7 +349,7 @@ class parseArgs():
 	def __init__(self):
 		#Define options
 		try:
-			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:M:c:b:Np:P:xJj:F:fR:X:Y:', \
+			options, remainder = getopt.getopt(sys.argv[1:], 'h1:2:r:o:znd:m:M:c:b:Np:P:xJj:F:fR:X:Y:S:', \
 			["help"])
 		except getopt.GetoptError as err:
 			print(err)
@@ -379,6 +379,7 @@ class parseArgs():
 		self.resume=0
 		self.xlim=None
 		self.ylim=None
+		self.stat='frequency'
 
 		#First pass to see if help menu was called
 		for o, a in options:
@@ -435,6 +436,11 @@ class parseArgs():
 				self.xlim=float(arg)
 			elif opt=="Y":
 				self.ylim=float(arg)
+			elif opt=="S":
+				if arg != "frequency" and arg != "count" and arg != "density" and arg != "probability":
+					self.display_help("Invalid option for -S:",arg)
+				else:
+					self.stat=arg
 			elif opt=="R":
 				if int(arg) not in [1, 2, 3]:
 					self.display_help("Invalid option for -R:",arg)
@@ -508,7 +514,8 @@ class parseArgs():
 		-b	: Binwidth for plotting [default=0.1]
 		-X	: X-limit for plotting [default=None]
 		-Y	: Y-limit for plotting [default=None]
-
+		-S	: Histogram stat [default='frequency']
+			  Options: count, frequency, density, probability
 """)
 		print()
 		sys.exit()

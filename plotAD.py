@@ -2,7 +2,7 @@ import seaborn as sns
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-def plotAD(dat, out, binwidth=0.1, y=None, x=None):
+def plotAD(dat, out, stat='frequency', binwidth=0.1, y=None, x=None):
 	sns.set_theme(style="ticks")
 	f, ax = plt.subplots(figsize=(7, 5))
 	sns.despine()
@@ -14,7 +14,7 @@ def plotAD(dat, out, binwidth=0.1, y=None, x=None):
 		palette="light:m_r",
 		edgecolor=".3",
 		linewidth=.5,
-		stat='frequency',
+		stat=stat,
 		binwidth=0.1
 	)
 	plt.ylim(0, y)
@@ -23,7 +23,7 @@ def plotAD(dat, out, binwidth=0.1, y=None, x=None):
 	#plt.show()
 	sns_plot.figure.savefig(oname, dpi=400)
 
-def plotADclassified(dat, out, cls, binwidth=0.1, y=None, x=None):
+def plotADclassified(dat, out, cls, stat='frequency', binwidth=0.1, y=None, x=None):
 	sns.set_theme(style="ticks")
 	f, ax = plt.subplots(figsize=(7, 5))
 	sns.despine()
@@ -35,7 +35,7 @@ def plotADclassified(dat, out, cls, binwidth=0.1, y=None, x=None):
 		palette="colorblind",
 		edgecolor=".3",
 		linewidth=.5,
-		stat='frequency',
+		stat=stat,
 		binwidth=0.1
 	)
 	plt.ylim(0, y)
