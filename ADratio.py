@@ -107,9 +107,7 @@ def main():
 	elif params.resume == 2:
 		print("Reading ADratio file...\n")
 		oa=params.out + "_AD.txt"
-		adratios=pd.read_table(oa, sep="\t", header=0)
-		dat=ADtoDF(adratios)
-		del adratios
+		dat=pd.read_table(oa, sep="\t", header=0)
 	
 	
 	#if classification requested
