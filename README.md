@@ -54,7 +54,7 @@ Description: Computes allele depth ratios from pileup data
 	Optional arguments:
 		-d	: FASTA header delimiter [default=None]
 		-o	: Output file prefix [default=out]
-		-R	: Resume from: 1-Coverage files; 2-ADratio file
+		-R	: Resume from: 1-Coverage files; 2-ADratio file; 3-Classify file
 		
 	ADratio arguments:
 		-c	: Normalizing constant, calculated as:
@@ -64,7 +64,7 @@ Description: Computes allele depth ratios from pileup data
 		-M	: Maximum proportion of Ns to retain a contig [default=0.5]
 		
 	Classifier arguments:
-		-N	: Toggle to classify scaffolds to chromosome type (e.g. X, Y, autosome)
+		-N	: Toggle to classify scaffolds to chromosome type (e.g. X, Y, aut)
 		-p	: (Optional) Params file to customize chr type priors
 			   See documentation. By default, we assume three Gaussian 
 			   priors representing how we expect ADratio to vary by chr type:
@@ -92,6 +92,8 @@ Description: Computes allele depth ratios from pileup data
 		-b	: Binwidth for plotting [default=0.1]
 		-X	: X-limit for plotting [default=None]
 		-Y	: Y-limit for plotting [default=None]
+		-S	: Histogram stat [default='frequency']
+			  Options: count, frequency, density, probability
 ```
 
 The meaning of these various options, and the format of the required inputs, are discussed below. Also note that this assumes your Python3 interpreter is installed at /usr/bin/python... If this isn't the case, you can specify python like so:
@@ -414,19 +416,3 @@ And, once again, the probabilities change in response to the new priors:
 | contig1  | 2.0                   | 1.6163204137968048     | 1.6593872092108116e-64 | 5.948821904879058e-07 | 1.6163204137968048 | X    | 702.1414875258806  | -577.6301068711439  | 573.4595577108098 | 702.1414875258806  | X     |
 | contig3  | 0.0062499999999999995 | 1.7799141492436244e-14 | 2.9687218463039926     | 5.187030146205668e-06 | 2.9687218463039926 | Y    | -89.37089224985118 | 195.07251680880455  | 79.91950208219647 | 195.07251680880455 | Y     |
 
-## Validation
-In the case that a fully assembled genome with a complementary Y-chromosome assembly does exist (...there aren't many...), you can compare the results of ADratio with candidate chromosome assignments with candidate assignments creating by mapping against the genome. For the black bear dataset used in the above example, I here present a comparison using the dog genome (canFam3.1). 
-
-First, I downloaded the canFam3.1 assembly, and excluded unplaced scaffolds. You can access the assembly here: https://www.ncbi.nlm.nih.gov/assembly/GCF_000002285.3/. Next, I also downloaded the available Y-chromosome assembly for Canis familiaris: https://www.ncbi.nlm.nih.gov/nuccore/KP081776. I then concatenated these to form my full reference:
-```
-cat *.fna > canFam_chroms_plusY.fasta
-```
-
-I then mapped my scaffolds using [minimap2](https://github.com/lh3/minimap2): 
-```
-minimap2 -cx asm20 --cs canFam_chroms_plusY.fasta GCA_003344425.1_ASM334442v1_genomic.fna > bba_canFam.paf
-```
-Minimap2 completed in about 30 minutes. Next, I used [pafScaff](https://github.com/slimsuite/pafscaff) to clean up and improve the scaffolding:
-```
-python3 ./pafscaff/code/pafscaff.py pafin=bba_canFam.paf basefile=bba_pafscaff reference=canFam_chroms_plusY.fasta assembly=GCA_003344425.1_ASM334442v1_genomic.fna sorted=RefStart forks=16
-```

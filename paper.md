@@ -27,7 +27,8 @@ Historically, approached relied on bacterial artificial chromosome (BAC) or fluo
 Sex-detector (https://pubmed.ncbi.nlm.nih.gov/27492231/); synteny/ identity search; 
 Using large numbers of samples/ markers to identify sex-specific sequences: https://onlinelibrary.wiley.com/doi/pdf/10.1111/1755-0998.12237
 Complex evolutionary trajectories of sex chromosomes across bird taxa
-
+https://link.springer.com/article/10.1186/s12864-019-5996-3
+https://onlinelibrary.wiley.com/doi/full/10.1111/mec.15245
 Other approaches use enrichment methods to specifically target sex-limited chromosomes (<CITE>), but these methods require changes to the study design prior to sequencing. Here, we focus on adapting methods for the identification of sex-linked scaffolds post hoc. 
 
 
