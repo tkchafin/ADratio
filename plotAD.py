@@ -11,11 +11,11 @@ def plotAD(dat, out, stat='frequency', binwidth=0.1, y=None, x=None):
 		dat,
 		x="AD", 
 		multiple="stack",
-		palette="light:m_r",
+		palette="colorblind",
 		edgecolor=".3",
 		linewidth=.5,
 		stat=stat,
-		binwidth=0.1
+		binwidth=binwidth
 	)
 	plt.ylim(0, y)
 	plt.xlim(0, x)
@@ -36,7 +36,7 @@ def plotADclassified(dat, out, cls, stat='frequency', binwidth=0.1, y=None, x=No
 		edgecolor=".3",
 		linewidth=.5,
 		stat=stat,
-		binwidth=0.1
+		binwidth=binwidth
 	)
 	plt.ylim(0, y)
 	plt.xlim(0, x)
