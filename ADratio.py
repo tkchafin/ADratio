@@ -63,7 +63,7 @@ def main():
 	else:
 		print("Resuming from existing files...\n")
 	
-	if params.resume != 1:
+	if params.resume == 0:
 		#Parse individual 1 coverage
 		print("\nParsing bedgraph for individual 1:",params.sam1)
 		if params.ambigskip:
@@ -85,14 +85,14 @@ def main():
 		op=params.out+"_ind2"
 		writeCov(op, cov2)
 		#print(cov2)
-	else:
+	elif params.resume==1:
 		print("Reading coverage files...\n")
 		o1=params.out + "_ind1_cov.txt"
 		cov1=readCoverage(o1)
 		o2=params.out + "_ind2_cov.txt"
 		cov2=readCoverage(o2)
 	
-	if params.resume not in [2, 3]:
+	if params.resume in [0,1]:
 		#Calculate normalized ADratio per-scaffold
 		print("\nComputing ADratio for each scaffold...")
 		print("...Using the normalizing constant:",str(params.constant))
@@ -104,7 +104,7 @@ def main():
 		del cov1
 		del cov2
 		del adratios
-	else:
+	elif params.resume == 2:
 		print("Reading ADratio file...\n")
 		oa=params.out + "_AD.txt"
 		adratios=pd.read_table(oa, sep="\t", header=0)
@@ -143,6 +143,9 @@ def main():
 			oname=params.out+"_classify.txt"
 			print("\nOutputting classified results to:",oname)
 			dat_class.to_csv(oname, sep="\t", header=True, quoting=None, index=False)
+	else:
+		oname=params.out+"_classify.txt"
+		dat_class=pd.read_table(oname, header=0, sep="\t")
 		
 	#Make plots
 	if not params.noPlots:
