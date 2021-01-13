@@ -219,69 +219,6 @@ You can also just run the classification model on already calculated AD ratios, 
 
 ## Examples 
 
-### Tutorial using large American black bear dataset
-There are various ways to go about producing the above input, but the general process is to: 1) Map reads for each sample to the given genome (after any number of optional quality filtering steps); 2) Count up how many reads pile up on each read position. In our example here, we will accomplish the first using [bwa mem](http://bio-bwa.sourceforge.net/), a popular short-read aligner, but you could use any number of others (such as [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml) or [bbmap](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmap-guide/)). 
-
-In my case, I downloaded two sets of raw sequence files from the NCBI SRA: 
-```
-SRR830685_1.fastq.gz SRR830685_2.fastq.gz SRR7813601_1.fastq.gz SRR7813601_2.fastq.gz
-```
-
-These represent paired-end Illumina HiSeq sequences for a known female (SRR830685) and male (SRR7813601) black bear individuals, sequenced originally by [Cahill et al 2013](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3597504/#pgen.1003345.s013) and [Srivastava et al. 2019](https://academic.oup.com/dnaresearch/article/26/1/37/5161192), respectively.
-
-I first used [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) to remove unpaired reads, do some basic quality trimming, and also trim the female sequences to a maximum length of 125, to match the shorter length of the male reads (which was sequenced at 2x125 instead of 2x150). 
-
-```
-#trimming male sequence (note NO cropping)
-java -jar /share/apps/bioinformatics/trimmomatic/Trimmomatic-0.36/trimmomatic-0.36.jar PE -threads 32 SRR7813601_1.fastq.gz SRR7813601_2.fastq.gz male_R1.fq.gz male_unpaired_R1.fq.gz male_R2.fq.gz male_unpaired_R2.fq.gz ILLUMINACLIP:TruSeq3-PE.fa:2:30:10:2:keepBothReads LEADING:3 TRAILING:3 MINLEN:36 SLIDINGWINDOW:4:15
-
-#trimming female sequences (with crop to 125bp)
-java -jar /share/apps/bioinformatics/trimmomatic/Trimmomatic-0.36/trimmomatic-0.36.jar PE -threads 32 SRR830685_1.fastq.gz SRR830685_2.fastq.gz female_R1.fq.gz female_unpaired_R1.fq.gz female_R2.fq.gz female_unpaired_R2.fq.gz ILLUMINACLIP:TruSeq3-PE.fa:2:30:10:2:keepBothReads LEADING:3 TRAILING:3 MINLEN:36 SLIDINGWINDOW:4:15 CROP:125
-```
-Next, I mapped the trimmed reads to the available [black bear genome assembly](https://www.ncbi.nlm.nih.gov/assembly/GCA_003344425.1/), which at the time of writing was scaffold-level with N=111,495 scaffolds and a scaffold N50 of ~190k. It goes without saying that in order to assign Y-chromosome scaffolds, they must be present in the assembly... In this case, the individual from which raw reads were generated for our reference assembly *was male*, so we're good to go! We'll be removing scaffolds below a length threshold later. I performed the mapping using [bwa mem](http://bio-bwa.sourceforge.net/):
-
-```
-#indexing the reference genome 
-bwa index GCA_003344425.1_ASM334442v1_genomic.fna
-
-#bwa mapping 
-bwa mem -t 32 GCA_003344425.1_ASM334442v1_genomic.fna male_R1.fq.gz male_R2.fq.gz > male_align.sam
-bwa mem -t 32 GCA_003344425.1_ASM334442v1_genomic.fna female_R1.fq.gz female_R2.fq.gz > female_align.sam
-```
-
-In my case, I was running on an HPC cluster with 32 cores per node (-t 32), so each of these was actually submitted separately as individual jobs, each on one 32-core node. You should change the "-t" flag to match the number of cores available to you.
-
-The next step did some file conversions using [samtools](http://www.htslib.org/), namely converting the map output (.sam) to a more compressed (binary) format (.bam), and sorting that output to improve the compression. These steps will need to be replicated on both male and female sequences (note here only shown for female):
-```
-samtools view -h -b -S female_align.sam > female_align.bam
-samtools view -b -F 4 female_align.bam > female_mapped.bam 
-samtools sort female_mapped.bam > female_mapped_sorted.bam
-```
-
-Next, I used the [picard](https://broadinstitute.github.io/picard/) MarkDuplicates tool (read about it's purpose [here](https://gatk.broadinstitute.org/hc/en-us/articles/360037052812-MarkDuplicates-Picard-)) to remove PCR artefacts which can present as optical duplicates on the sequencer:
-```
-java -jar /share/apps/bioinformatics/picard/picard-tools-2.17.10/picard.jar MarkDuplicates I=female_mapped_sorted.bam O=female_removeDups.bam M=marked_dup_metrics.txt REMOVE_DUPLICATES=true
-java -jar /share/apps/bioinformatics/picard/picard-tools-2.17.10/picard.jar MarkDuplicates I=male_mapped_sorted.bam O=male_removeDups.bam M=marked_dup_metrics.txt REMOVE_DUPLICATES=true
-```
-
-Finally, I produced the exact output needed for ADratio.py using the [genomecov](https://bedtools.readthedocs.io/en/latest/content/tools/genomecov.html) tool from [bedtools](https://bedtools.readthedocs.io/en/latest/), using the "-d" option to produce a per-base depth report (using *1-based* indexing):
-```
-/share/apps/bioinformatics/bedtools2/2.25.0/bin/bedtools genomecov -d -ibam female_removeDups.bam > female_coverage.txt
-/share/apps/bioinformatics/bedtools2/2.25.0/bin/bedtools genomecov -d -ibam male_removeDups.bam > male_coverage.txt
-```
-
-The normalizing constant was then calculated using samtools applied to each of the filtered bam files, then dividing the total number of (passing) male reads by the total female reads:
-```
-samtools view -c -F 260 XXX_removeDups.bam
-```
-In this case, the normalizing constant was 1.003, so very close to the default used by ADratio. 
-
-That's it! After completing these steps you can run ADratio. Note that the runtimes can be *considerable* depending on the amount of sequence data, your genome size, and the specifics of your machine (e.g. # available cores), so running on an HPC is recommended. For reference, here are rough runtimes for the example above: Trimmomatic: ~3 hours per individual; BWA+samtools: ~12 hours (with 32 cores; CPU time ~70 hours); Picard MarkDuplicates: ~4 hours (CPU time 9 hours); bedtools genomecov: 12 hours. Benchmarking ADratio for these files is also presented below. 
-
-You can then run ADratio, using the default classification priors, excluding N positions, and excluding scaffolds having >10% N content or being shorter than 1000bp, like so:
-```
-./ADratio.py -r .GCA_003344425.1_ASM334442v1_genomic.fna -1 female_coverage.txt -2 male_coverage.txt -m 1000 -M 0.1 -N -n -J -o "bba" -d " " -c 0.997
-```
 
 ### Test cases using example files
 
@@ -416,3 +353,68 @@ And, once again, the probabilities change in response to the new priors:
 | contig1  | 2.0                   | 1.6163204137968048     | 1.6593872092108116e-64 | 5.948821904879058e-07 | 1.6163204137968048 | X    | 702.1414875258806  | -577.6301068711439  | 573.4595577108098 | 702.1414875258806  | X     |
 | contig3  | 0.0062499999999999995 | 1.7799141492436244e-14 | 2.9687218463039926     | 5.187030146205668e-06 | 2.9687218463039926 | Y    | -89.37089224985118 | 195.07251680880455  | 79.91950208219647 | 195.07251680880455 | Y     |
 
+
+
+### Tutorial using large American black bear dataset
+There are various ways to go about producing the above input, but the general process is to: 1) Map reads for each sample to the given genome (after any number of optional quality filtering steps); 2) Count up how many reads pile up on each read position. In our example here, we will accomplish the first using [bwa mem](http://bio-bwa.sourceforge.net/), a popular short-read aligner, but you could use any number of others (such as [bowtie2](http://bowtie-bio.sourceforge.net/bowtie2/index.shtml) or [bbmap](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/bbmap-guide/)). 
+
+In my case, I downloaded two sets of raw sequence files from the NCBI SRA: 
+```
+SRR830685_1.fastq.gz SRR830685_2.fastq.gz SRR7813601_1.fastq.gz SRR7813601_2.fastq.gz
+```
+
+These represent paired-end Illumina HiSeq sequences for a known female (SRR830685) and male (SRR7813601) black bear individuals, sequenced originally by [Cahill et al 2013](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3597504/#pgen.1003345.s013) and [Srivastava et al. 2019](https://academic.oup.com/dnaresearch/article/26/1/37/5161192), respectively.
+
+I first used [Trimmomatic](http://www.usadellab.org/cms/?page=trimmomatic) to remove unpaired reads, do some basic quality trimming, and also trim the female sequences to a maximum length of 125, to match the shorter length of the male reads (which was sequenced at 2x125 instead of 2x150). 
+
+```
+#trimming male sequence (note NO cropping)
+java -jar /share/apps/bioinformatics/trimmomatic/Trimmomatic-0.36/trimmomatic-0.36.jar PE -threads 32 SRR7813601_1.fastq.gz SRR7813601_2.fastq.gz male_R1.fq.gz male_unpaired_R1.fq.gz male_R2.fq.gz male_unpaired_R2.fq.gz ILLUMINACLIP:TruSeq3-PE.fa:2:30:10:2:keepBothReads LEADING:3 TRAILING:3 MINLEN:36 SLIDINGWINDOW:4:15
+
+#trimming female sequences (with crop to 125bp)
+java -jar /share/apps/bioinformatics/trimmomatic/Trimmomatic-0.36/trimmomatic-0.36.jar PE -threads 32 SRR830685_1.fastq.gz SRR830685_2.fastq.gz female_R1.fq.gz female_unpaired_R1.fq.gz female_R2.fq.gz female_unpaired_R2.fq.gz ILLUMINACLIP:TruSeq3-PE.fa:2:30:10:2:keepBothReads LEADING:3 TRAILING:3 MINLEN:36 SLIDINGWINDOW:4:15 CROP:125
+```
+Next, I mapped the trimmed reads to the available [black bear genome assembly](https://www.ncbi.nlm.nih.gov/assembly/GCA_003344425.1/), which at the time of writing was scaffold-level with N=111,495 scaffolds and a scaffold N50 of ~190k. It goes without saying that in order to assign Y-chromosome scaffolds, they must be present in the assembly... In this case, the individual from which raw reads were generated for our reference assembly *was male*, so we're good to go! We'll be removing scaffolds below a length threshold later. I performed the mapping using [bwa mem](http://bio-bwa.sourceforge.net/):
+
+```
+#indexing the reference genome 
+bwa index GCA_003344425.1_ASM334442v1_genomic.fna
+
+#bwa mapping 
+bwa mem -t 32 GCA_003344425.1_ASM334442v1_genomic.fna male_R1.fq.gz male_R2.fq.gz > male_align.sam
+bwa mem -t 32 GCA_003344425.1_ASM334442v1_genomic.fna female_R1.fq.gz female_R2.fq.gz > female_align.sam
+```
+
+In my case, I was running on an HPC cluster with 32 cores per node (-t 32), so each of these was actually submitted separately as individual jobs, each on one 32-core node. You should change the "-t" flag to match the number of cores available to you.
+
+The next step did some file conversions using [samtools](http://www.htslib.org/), namely converting the map output (.sam) to a more compressed (binary) format (.bam), and sorting that output to improve the compression. These steps will need to be replicated on both male and female sequences (note here only shown for female):
+```
+samtools view -h -b -S female_align.sam > female_align.bam
+samtools view -b -F 4 female_align.bam > female_mapped.bam 
+samtools sort female_mapped.bam > female_mapped_sorted.bam
+```
+
+Next, I used the [picard](https://broadinstitute.github.io/picard/) MarkDuplicates tool (read about it's purpose [here](https://gatk.broadinstitute.org/hc/en-us/articles/360037052812-MarkDuplicates-Picard-)) to remove PCR artefacts which can present as optical duplicates on the sequencer:
+```
+java -jar /share/apps/bioinformatics/picard/picard-tools-2.17.10/picard.jar MarkDuplicates I=female_mapped_sorted.bam O=female_removeDups.bam M=marked_dup_metrics.txt REMOVE_DUPLICATES=true
+java -jar /share/apps/bioinformatics/picard/picard-tools-2.17.10/picard.jar MarkDuplicates I=male_mapped_sorted.bam O=male_removeDups.bam M=marked_dup_metrics.txt REMOVE_DUPLICATES=true
+```
+
+Finally, I produced the exact output needed for ADratio.py using the [genomecov](https://bedtools.readthedocs.io/en/latest/content/tools/genomecov.html) tool from [bedtools](https://bedtools.readthedocs.io/en/latest/), using the "-d" option to produce a per-base depth report (using *1-based* indexing):
+```
+/share/apps/bioinformatics/bedtools2/2.25.0/bin/bedtools genomecov -d -ibam female_removeDups.bam > female_coverage.txt
+/share/apps/bioinformatics/bedtools2/2.25.0/bin/bedtools genomecov -d -ibam male_removeDups.bam > male_coverage.txt
+```
+
+The normalizing constant was then calculated using samtools applied to each of the filtered bam files, then dividing the total number of (passing) male reads by the total female reads:
+```
+samtools view -c -F 260 XXX_removeDups.bam
+```
+In this case, the normalizing constant was 1.003, so very close to the default used by ADratio. 
+
+That's it! After completing these steps you can run ADratio. Note that the runtimes can be *considerable* depending on the amount of sequence data, your genome size, and the specifics of your machine (e.g. # available cores), so running on an HPC is recommended. For reference, here are rough runtimes for the example above: Trimmomatic: ~3 hours per individual; BWA+samtools: ~12 hours (with 32 cores; CPU time ~70 hours); Picard MarkDuplicates: ~4 hours (CPU time 9 hours); bedtools genomecov: 12 hours. Benchmarking ADratio for these files is also presented below. 
+
+You can then run ADratio, using the default classification priors, excluding N positions, and excluding scaffolds having >10% N content or being shorter than 1000bp, like so:
+```
+./ADratio.py -r .GCA_003344425.1_ASM334442v1_genomic.fna -1 female_coverage.txt -2 male_coverage.txt -m 1000 -M 0.1 -N -n -J -o "bba" -d " " -c 0.997
+```
