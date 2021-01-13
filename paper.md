@@ -20,9 +20,9 @@ bibliography: paper.bib
 
 # Summary
 
-Sex-limited chromosomes (e.g., the Y-chromosome in mammals) are notoriously difficult to sequence due to their highly repetitive natures (https://www.sciencedirect.com/science/article/pii/S0168952517300197). However, identification of sex-chromosome sequences in next-generation datasets is useful for a variety of reasons, such as the generation of sex-linked markers for sex determination (<CITE>), or the study of sex-biased evolutionar processes such as dispersal, reproductive success, and hybridization (<CITE>; <CITE>). Reference discussion in https://www.sciencedirect.com/science/article/pii/S0168952517300197#bib0280
+Sex-limited chromosomes (e.g., the Y-chromosome in mammals) are notoriously difficult to sequence due to their highly repetitive natures [@Tomaszkiewicz2017]. However, identification of sex-chromosome sequences or sex-linked scaffolds in genomic datasets is useful for a varierty of reasons, such as the generation of sex-linked markers for sex determination [@Krueger-Hadfield2020], contrasting sex-chromosome and autosomal evolution [@Pennell2018], or study of functional genomic traits underlying reproductive isolation [@Liu2018]. Historically, approaches to do so relied on bacterial artificial chromosome (BAC) or fluorescent in situ hybridization (FISH) approaches [@Tomaszkiewicz2017]. However, these methods are time-consuming and labor-intensive. 
 
-Historically, approached relied on bacterial artificial chromosome (BAC) or fluorescent in situ hybridization (FISH) approaches. However, these methods are time-consuming and labor-intensive. Modern approaches instead attempt to identify sex-chromosome sequences in genome assemblies. 
+Modern approaches instead attempt to identify sex-linked sequences after sequencing, often via sanalysis of large numbers of loci from individuals of known sex [@Gamble2014], and subsequently seeking statistical associations therein [@Muyle2016]. 
 
 Sex-detector (https://pubmed.ncbi.nlm.nih.gov/27492231/); synteny/ identity search; 
 Using large numbers of samples/ markers to identify sex-specific sequences: https://onlinelibrary.wiley.com/doi/pdf/10.1111/1755-0998.12237
